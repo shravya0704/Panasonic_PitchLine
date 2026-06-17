@@ -1,4 +1,5 @@
 import { products } from "./data/models.ts";
+import { calculatePowerFlow } from "./lib/calculations/calculatePowerFlow";
 import { calculateConfiguration } from "./lib/calculations/calculateConfiguration";
 
 function App() {

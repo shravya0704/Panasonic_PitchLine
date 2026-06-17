@@ -4,6 +4,9 @@ import { calculateConfiguration } from "./lib/calculations/calculateConfiguratio
 import { generatePdf } from "./lib/generatePdf";
 import { ConfigForm } from "./components/ConfigForm";
 import { ResultsPanel } from "./components/ResultsPanel";
+import { PowerDiagram } from "./components/PowerDiagram";
+import { assignPowerChains } from "./lib/calculations/assignPowerChains";
+
 import { Product } from "./types/Product";
 import { ConfigurationResult } from "./types/ConfigurationResult";
 
@@ -13,6 +16,12 @@ function App() {
   const [height, setHeight] = useState<number>(0);
   const [result, setResult] = useState<ConfigurationResult | null>(null);
 
+  const testAssignment = assignPowerChains(
+    10,
+    6,
+    [15, 15, 15, 15]
+  );
+
   const handleCalculate = () => {
     if (!selectedProduct || width <= 0 || height <= 0) {
       alert("Please select a product and enter valid dimensions.");
@@ -20,11 +29,17 @@ function App() {
     }
 
     try {
-      const config = calculateConfiguration(selectedProduct, width, height);
+      const config = calculateConfiguration(
+        selectedProduct,
+        width,
+        height
+      );
       setResult(config);
     } catch (error) {
       alert(
-        `Error calculating configuration: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Error calculating configuration: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   };
@@ -39,7 +54,9 @@ function App() {
       generatePdf(selectedProduct, result, width, height);
     } catch (error) {
       alert(
-        `Error exporting PDF: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Error exporting PDF: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
       );
     }
   };
@@ -52,6 +69,13 @@ function App() {
       </header>
 
       <main className="app-main">
+        <PowerDiagram
+  cabinetsW={10}
+  cabinetsH={6}
+  assignmentGrid={testAssignment}
+  showLines={true}
+/>
+
         <ConfigForm
           products={products}
           selectedProduct={selectedProduct}
@@ -66,7 +90,10 @@ function App() {
         {result && (
           <div className="export-section">
             <ResultsPanel result={result} />
-            <button className="export-pdf-button" onClick={handleExportPdf}>
+            <button
+              className="export-pdf-button"
+              onClick={handleExportPdf}
+            >
               Export PDF
             </button>
           </div>
