@@ -2,6 +2,8 @@ import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
 import { drawCoverPage } from "./drawCoverPage";
+import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
+import { addBrochurePages } from "./addBrochurePages";
 import { drawScreenSpecsPage } from "./drawScreenSpecsPage";
 import { drawProductSpecsPage } from "./drawProductSpecsPage";
 import { drawPowerDiagramPage } from "./drawPowerDiagramPage";
@@ -18,15 +20,17 @@ export const generatePdf = async (
 ): Promise<void> => {
   const doc = new jsPDF();
 
-  // Page 1: Cover Page
-  drawCoverPage(doc, product);
+// Page 1
+drawMarketingCoverPage(doc);
 
-  
-  // Page 2: Screen Configuration
+// Page 2
 doc.addPage();
-drawScreenSpecsPage(
-  doc,
-  product,
+drawCoverPage(doc, product);
+  // Page 3: Screen Configuration
+  doc.addPage();
+  drawScreenSpecsPage(
+    doc,
+    product,
   result,
   screenPreviewImage,
   width,
@@ -64,7 +68,7 @@ drawPowerDiagramPage(
   product,
   result
 );
-
+addBrochurePages(doc);
   // Save PDF
   doc.save("Panasonic_LED_Configuration.pdf");
 };

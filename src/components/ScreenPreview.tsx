@@ -117,22 +117,8 @@ export const ScreenPreview = forwardRef<
                 backgroundPosition: "center",
               }}
             >
-              {/* UHD Badge */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 10,
-                  left: 10,
-                  background: "red",
-                  color: "white",
-                  padding: "4px 10px",
-                  borderRadius: "4px",
-                  fontWeight: "bold",
-                  zIndex: 2,
-                }}
-              >
-                UHD
-              </div>
+              
+               
 
               {/* Vertical Cabinet Lines */}
               {Array.from({

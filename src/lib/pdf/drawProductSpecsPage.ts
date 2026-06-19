@@ -1,61 +1,341 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
+import { PRODUCT_SPECS } from "../../data/productSpecifications";
 
 export const drawProductSpecsPage = (
   doc: jsPDF,
   product: Product
 ): void => {
-  doc.setFontSize(20);
+  const specs =
+    PRODUCT_SPECS[product.model];
+
+  if (!specs) {
+    doc.setFontSize(12);
+
+    doc.text(
+      "No specification data available.",
+      20,
+      40
+    );
+
+    return;
+  }
+
+  doc.setFont(
+    "helvetica",
+    "bold"
+  );
+
+  doc.setFontSize(18);
 
   doc.text(
     "Product Specifications",
-    20,
+    15,
     20
   );
 
-  const rows = [
-    ["Model", product.model],
-    [
-      "Pixel Pitch",
-      `${product.pitch} mm`,
-    ],
-    [
-      "Brightness",
-      `${product.brightness} nits`,
-    ],
-    [
-      "Cabinet Width",
-      `${product.cabinetWidth} mm`,
-    ],
-    [
-      "Cabinet Height",
-      `${product.cabinetHeight} mm`,
-    ],
-    [
-      "Resolution Width",
-      product.cabinetResolutionW.toString(),
-    ],
-    [
-      "Resolution Height",
-      product.cabinetResolutionH.toString(),
-    ],
-    [
-      "Modules Per Cabinet",
-      product.modulesPerCabinet.toString(),
-    ],
-  ];
+  doc.setFontSize(12);
 
-  let y = 40;
+  doc.text(
+    product.model,
+    15,
+    30
+  );
 
-  rows.forEach((row) => {
-    doc.rect(20, y, 70, 12);
+  doc.setDrawColor(
+    180,
+    180,
+    180
+  );
 
-    doc.rect(90, y, 90, 12);
+  doc.line(
+    15,
+    35,
+    195,
+    35
+  );
 
-    doc.text(row[0], 25, y + 8);
+  const LEFT_X = 15;
+  const RIGHT_X = 108;
 
-    doc.text(row[1], 95, y + 8);
+  let leftY = 48;
+  let rightY = 48;
 
-    y += 12;
-  });
+  const drawSection = (
+    title: string,
+    rows: [string, string][],
+    column: "left" | "right"
+  ) => {
+    const startX =
+      column === "left"
+        ? LEFT_X
+        : RIGHT_X;
+
+    let y =
+      column === "left"
+        ? leftY
+        : rightY;
+
+    doc.setFillColor(
+      235,
+      235,
+      235
+    );
+
+    doc.rect(
+      startX,
+      y - 6,
+      82,
+      8,
+      "F"
+    );
+
+    doc.setFont(
+      "helvetica",
+      "bold"
+    );
+
+    doc.setFontSize(9);
+
+    doc.text(
+      title,
+      startX + 2,
+      y
+    );
+
+    y += 10;
+
+    rows.forEach(
+      ([label, value]) => {
+        doc.setFont(
+          "helvetica",
+          "normal"
+        );
+
+        doc.setFontSize(8);
+
+        doc.text(
+          label,
+          startX + 2,
+          y
+        );
+
+        doc.text(
+          value,
+          startX + 40,
+          y
+        );
+
+        y += 6;
+      }
+    );
+
+    y += 6;
+
+    if (column === "left") {
+      leftY = y;
+    } else {
+      rightY = y;
+    }
+  };
+
+  // LEFT COLUMN
+
+  drawSection(
+    "PHYSICAL PARAMETERS",
+    [
+      [
+        "Pixel Configuration",
+        specs["Pixel Configuration"],
+      ],
+      [
+        "Pixel Pitch",
+        specs["Pixel Pitch (mm)"] +
+          " mm",
+      ],
+      [
+        "Module Resolution",
+        specs["Module Resolution"],
+      ],
+      [
+        "Module Dimensions",
+        specs["Module Dimensions"],
+      ],
+      [
+        "Module Weight",
+        specs["Module Weight"],
+      ],
+      [
+        "Modules Per Cabinet",
+        specs[
+          "Modules Per Cabinet"
+        ],
+      ],
+      [
+        "Cabinet Resolution",
+        specs[
+          "Cabinet Resolution"
+        ],
+      ],
+      [
+        "Cabinet Dimensions",
+        specs[
+          "Cabinet Dimensions"
+        ],
+      ],
+      [
+        "Cabinet Surface Area",
+        specs[
+          "Cabinet Surface Area"
+        ],
+      ],
+      [
+        "Cabinet Weight",
+        specs["Cabinet Weight"],
+      ],
+      [
+        "Weight Per m²",
+        specs["Weight Per m²"],
+      ],
+      [
+        "Flatness",
+        specs["Flatness"],
+      ],
+      [
+        "Cabinet Material",
+        specs[
+          "Cabinet Material"
+        ],
+      ],
+      [
+        "Service Access",
+        specs[
+          "Service Access"
+        ],
+      ],
+    ],
+    "left"
+  );
+
+  drawSection(
+    "OPTICAL SPECIFICATIONS",
+    [
+      [
+        "Brightness",
+        specs["Brightness"],
+      ],
+      [
+        "Pixel Density",
+        specs["Pixel Density"],
+      ],
+      [
+        "Color Temperature",
+        specs[
+          "Color Temperature"
+        ],
+      ],
+      [
+        "Viewing Angle",
+        specs[
+          "Viewing Angle"
+        ],
+      ],
+      [
+        "Brightness Uniformity",
+        specs[
+          "Brightness Uniformity"
+        ],
+      ],
+      [
+        "Color Uniformity",
+        specs[
+          "Color Uniformity"
+        ],
+      ],
+      [
+        "Contrast Ratio",
+        specs[
+          "Contrast Ratio"
+        ],
+      ],
+      [
+        "Processing Depth",
+        specs[
+          "Processing Depth"
+        ],
+      ],
+    ],
+    "left"
+  );
+
+  // RIGHT COLUMN
+
+  drawSection(
+    "ELECTRICAL SPECIFICATIONS",
+    [
+      [
+        "Power Consumption (Max)",
+        specs[
+          "Power Consumption (Max)"
+        ],
+      ],
+      [
+        "Power Consumption (Avg)",
+        specs[
+          "Power Consumption (Average)"
+        ],
+      ],
+      [
+        "Power Supply",
+        specs["Power Supply"],
+      ],
+      [
+        "Frame Rate",
+        specs["Frame Rate"],
+      ],
+      [
+        "Refresh Rate",
+        specs["Refresh Rate"],
+      ],
+    ],
+    "right"
+  );
+
+  drawSection(
+    "OPERATION",
+    [
+      [
+        "LED Lifetime",
+        specs["LED Lifetime"],
+      ],
+      [
+        "Application",
+        specs["Application"],
+      ],
+    ],
+    "right"
+  );
+
+  drawSection(
+    "ENVIRONMENT",
+    [
+      [
+        "Operating Temp.",
+        specs[
+          "Operating Temperature"
+        ],
+      ],
+      [
+        "Operating Humidity",
+        specs[
+          "Operating Humidity"
+        ],
+      ],
+      [
+        "IP Rating",
+        specs["IP Rating"],
+      ],
+    ],
+    "right"
+  );
 };
