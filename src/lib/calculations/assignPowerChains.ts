@@ -3,34 +3,38 @@ export const assignPowerChains = (
   cabinetsH: number,
   distribution: number[]
 ): string[][] => {
-  const grid: string[][] = [];
+  const grid: string[][] = Array.from(
+    { length: cabinetsH },
+    () => Array(cabinetsW).fill("")
+  );
 
-  let currentChain = 0;
-  let remainingInChain = distribution[0];
+  let nextLetterCode = 65; // A
 
-  for (let row = 0; row < cabinetsH; row++) {
-    const currentRow: string[] = [];
+  for (let col = 0; col < cabinetsW; col++) {
+    let currentRow = 0;
 
-    for (let col = 0; col < cabinetsW; col++) {
-      const chainLetter = String.fromCharCode(
-        65 + currentChain
-      );
+    for (
+      let distIndex = 0;
+      distIndex < distribution.length;
+      distIndex++
+    ) {
+      const chainSize =
+        distribution[distIndex];
 
-      currentRow.push(chainLetter);
+      const letter =
+        String.fromCharCode(
+          nextLetterCode++
+        );
 
-      remainingInChain--;
-
-      if (
-        remainingInChain === 0 &&
-        currentChain < distribution.length - 1
+      for (
+        let count = 0;
+        count < chainSize;
+        count++
       ) {
-        currentChain++;
-        remainingInChain =
-          distribution[currentChain];
+        grid[currentRow][col] = letter;
+        currentRow++;
       }
     }
-
-    grid.push(currentRow);
   }
 
   return grid;
