@@ -1,6 +1,6 @@
 import { getSeriesFromModel } from "../lib/helpers/getSeriesFromModel";
 
-import { getSeriesMetadata } from "./seriesService";
+import { SeriesService } from "./seriesService";
 
 export const getBrochureForModel = (
   model: string
@@ -8,5 +8,7 @@ export const getBrochureForModel = (
   const series =
     getSeriesFromModel(model);
 
-  return getSeriesMetadata(series);
+  return SeriesService.getSeries(
+    series
+  );
 };

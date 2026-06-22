@@ -1,7 +1,13 @@
-import { SERIES_METADATA } from "../data/seriesMetadata";
+import { SeriesRepository } from "../repositories/SeriesRepository";
 
-export const getSeriesMetadata = (
-  seriesId: string
-) => {
-  return SERIES_METADATA[seriesId];
+export const SeriesService = {
+  getSeries(
+    id: string
+  ) {
+    return SeriesRepository.getById(id);
+  },
+
+  getAllSeries() {
+    return SeriesRepository.getAll();
+  },
 };
