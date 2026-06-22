@@ -1,12 +1,7 @@
-import {
-  SERIES_METADATA,
-  SeriesMetadata,
-} from "../data/seriesMetadata";
+import { SERIES_METADATA } from "../data/seriesMetadata";
 
 export const getSeriesMetadata = (
   seriesId: string
-): SeriesMetadata | undefined => {
-  return SERIES_METADATA[
-    seriesId
-  ];
+) => {
+  return SERIES_METADATA[seriesId];
 };

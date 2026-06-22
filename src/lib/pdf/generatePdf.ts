@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
+import { getBrochureForModel } from "../../services/brochureService";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
 import { drawCoverPage } from "./drawCoverPage";
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
@@ -19,13 +20,27 @@ export const generatePdf = async (
   screenPreviewImage?: string
 ): Promise<void> => {
   const doc = new jsPDF();
-
+  const brochure = getBrochureForModel(
+  product.model
+);
+if (!brochure) {
+  throw new Error(
+    `No brochure found for model: ${product.model}`
+  );
+}
 // Page 1
-drawMarketingCoverPage(doc);
+// Page 1
+drawMarketingCoverPage(
+  doc,
+  brochure.coverImage
+);
 
 // Page 2
 doc.addPage();
-drawCoverPage(doc, product);
+drawCoverPage(
+  doc,
+  product
+);
   // Page 3: Screen Configuration
   doc.addPage();
   drawScreenSpecsPage(
@@ -68,7 +83,10 @@ drawPowerDiagramPage(
   product,
   result
 );
-addBrochurePages(doc);
+addBrochurePages(
+  doc,
+  brochure
+);
   // Save PDF
   doc.save("Panasonic_LED_Configuration.pdf");
 };

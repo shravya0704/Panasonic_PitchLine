@@ -223,25 +223,25 @@ export const drawDataDiagramPage = (
 
       const last =
         points[
-          points.length - 1
+        points.length - 1
         ];
 
       const x =
         startX +
         first.col *
-          cellSize +
+        cellSize +
         cellSize * 0.72;
 
       const y1 =
         startY +
         first.row *
-          cellSize +
+        cellSize +
         cellSize / 2;
 
       const y2 =
         startY +
         last.row *
-          cellSize +
+        cellSize +
         cellSize / 2;
 
       doc.line(
@@ -249,6 +249,18 @@ export const drawDataDiagramPage = (
         y1,
         x,
         y2
+      );
+      doc.setFillColor(
+        colors.line[0],
+        colors.line[1],
+        colors.line[2]
+      );
+
+      doc.circle(
+        x,
+        y1,
+        1.5,
+        "F"
       );
     }
   );

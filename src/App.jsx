@@ -1,10 +1,11 @@
-import { products } from "./data/models.ts";
+import { ProductService } from "../services/ProductService";
 import { calculatePowerFlow } from "./lib/calculations/calculatePowerFlow";
 import { calculateConfiguration } from "./lib/calculations/calculateConfiguration";
 
 function App() {
+  const products = ProductService.getProducts();
+  
   const result = calculateConfiguration(
-    products[0], // PFP LH-NP12P27
     6,           // Width
     8            // Height
   );

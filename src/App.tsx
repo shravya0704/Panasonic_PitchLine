@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { products } from "./data/models";
+import { ProductService } from "./services/ProductService";
 import { calculateConfiguration } from "./lib/calculations/calculateConfiguration";
 import { generatePdf } from "./lib/pdf/generatePdf";
 import { ConfigForm } from "./components/ConfigForm";
@@ -13,6 +13,9 @@ import html2canvas from "html2canvas";
 import { Product } from "./types/Product";
 import { ConfigurationResult } from "./types/ConfigurationResult";
 
+const products =
+  ProductService.getProducts();
+  
 function App() {
     const [selectedProduct, setSelectedProduct] =
         useState<Product | null>(null);

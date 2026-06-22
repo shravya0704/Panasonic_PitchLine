@@ -1,9 +1,8 @@
 import jsPDF from "jspdf";
 
-import coverImage from "../../assets/brochures/pfp/0001.jpg";
-
 export const drawMarketingCoverPage = (
-  doc: jsPDF
+  doc: jsPDF,
+  coverImage: string
 ): void => {
   doc.addImage(
     coverImage,
