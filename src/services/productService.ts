@@ -1,11 +1,11 @@
 import { ProductRepository } from "../repositories/ProductRepository";
 
 export const ProductService = {
-  getProducts() {
+  async getProducts() {
     return ProductRepository.getAll();
   },
 
-  getProduct(
+  async getProduct(
     id: string
   ) {
     return ProductRepository.getById(id);

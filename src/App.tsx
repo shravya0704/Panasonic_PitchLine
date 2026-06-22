@@ -1,5 +1,9 @@
-import { useRef, useState } from "react";
-import { ProductService } from "./services/ProductService";
+import {
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+import { ProductService } from "./services/productService";
 import { calculateConfiguration } from "./lib/calculations/calculateConfiguration";
 import { generatePdf } from "./lib/pdf/generatePdf";
 import { ConfigForm } from "./components/ConfigForm";
@@ -13,10 +17,48 @@ import html2canvas from "html2canvas";
 import { Product } from "./types/Product";
 import { ConfigurationResult } from "./types/ConfigurationResult";
 
-const products =
-  ProductService.getProducts();
-  
+
+
 function App() {
+    const [products, setProducts] =
+        useState<Product[]>([]);
+
+    const [loadingProducts, setLoadingProducts] =
+        useState(true);
+
+    useEffect(() => {
+        const loadProducts =
+            async () => {
+                try {
+                    const data =
+                        await ProductService.getProducts();
+
+                    console.log(
+                        JSON.stringify(
+                            data,
+                            null,
+                            2
+                        )
+                    );
+
+                    setProducts(data);
+                } catch (error) {
+                    console.error(
+                        "Error loading products:",
+                        error
+                    );
+
+                    alert(
+                        "Failed to load products from database."
+                    );
+                } finally {
+                    setLoadingProducts(false);
+                }
+            };
+
+        loadProducts();
+    }, []);
+
     const [selectedProduct, setSelectedProduct] =
         useState<Product | null>(null);
 
@@ -94,6 +136,14 @@ function App() {
             );
         }
     };
+
+    if (loadingProducts) {
+        return (
+            <div>
+                Loading products...
+            </div>
+        );
+    }
 
     return (
         <div className="app-container">
