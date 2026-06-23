@@ -18,9 +18,16 @@ export const ProductRepository = {
 
         model: row.model,
 
+        seriesCode:
+          row.series_code,
+
+        applicationType:
+          row.application_type,
+
         pitch: row.pitch,
 
-        brightness: row.brightness,
+        brightness:
+          row.brightness,
 
         cabinetWidth:
           row.cabinet_width,
@@ -58,6 +65,12 @@ export const ProductRepository = {
       id: data.id,
 
       model: data.model,
+
+      seriesCode:
+        data.series_code,
+
+      applicationType:
+        data.application_type,
 
       pitch: data.pitch,
 

@@ -1,12 +1,12 @@
 .app-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: #f4f6f8;
 }
 
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #101828;
   color: white;
-  padding: 3rem 2rem;
+  padding: 32px;
   text-align: center;
 }
 
@@ -19,13 +19,48 @@
 .app-header p {
   margin: 0;
   font-size: 16px;
-  opacity: 0.9;
+  color: #6b7280;
 }
 
 .app-main {
-  max-width: 900px;
+  max-width: 1500px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 32px;
+}
+
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.config-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.08);
+}
+
+.preview-card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  min-height: 700px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,.08);
+}
+
+@media (max-width: 1024px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .export-section {
@@ -241,12 +276,7 @@
 }
 
 .config-form {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .config-form h2 {

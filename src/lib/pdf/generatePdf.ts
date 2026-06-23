@@ -20,9 +20,10 @@ export const generatePdf = async (
   screenPreviewImage?: string
 ): Promise<void> => {
   const doc = new jsPDF();
-  const brochure = getBrochureForModel(
-  product.model
-);
+ const brochure =
+  getBrochureForModel(
+    product.model
+  );
 if (!brochure) {
   throw new Error(
     `No brochure found for model: ${product.model}`

@@ -23,7 +23,7 @@ export const ConfigForm = ({
 }: ConfigFormProps) => {
   return (
     <div className="config-form">
-      <h2>LED Display Configurator</h2>
+      
 
       <div className="form-group">
         <label htmlFor="model">LED Model</label>
@@ -35,10 +35,10 @@ export const ConfigForm = ({
             if (product) setSelectedProduct(product);
           }}
         >
-          <option value="">Select a model...</option>
+          <option value="">Select a model</option>
           {products.map((product) => (
             <option key={product.id} value={product.id}>
-              {product.model} (Pitch: {product.pitch}mm, Brightness: {product.brightness}nits)
+              {product.applicationType} {" | "} {product.seriesCode} {" | "} {product.model}
             </option>
           ))}
         </select>

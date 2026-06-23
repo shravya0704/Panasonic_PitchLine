@@ -1,3 +1,4 @@
+import "./App.css";
 import {
     useEffect,
     useRef,
@@ -159,43 +160,67 @@ function App() {
             </header>
 
             <main className="app-main">
-                <section>
-                    <h2>LED Display Configurator</h2>
+                <div className="dashboard-layout">
 
-                    <ConfigForm
-                        products={products}
-                        selectedProduct={selectedProduct}
-                        setSelectedProduct={setSelectedProduct}
-                        width={width}
-                        setWidth={setWidth}
-                        height={height}
-                        setHeight={setHeight}
-                        onCalculate={handleCalculate}
-                    />
+                    <div className="config-card">
+                        <ConfigForm
+                            products={products}
+                            selectedProduct={selectedProduct}
+                            setSelectedProduct={setSelectedProduct}
+                            width={width}
+                            setWidth={setWidth}
+                            height={height}
+                            setHeight={setHeight}
+                            onCalculate={handleCalculate}
+                        />
+                    </div>
 
-                    {result && (
-                        <div className="export-section">
-                            <ResultsPanel result={result} />
+                    <div className="preview-card">
 
-                            <ScreenPreview
-                                ref={screenPreviewRef}
-                                width={result.actualWidth}
-                                height={result.actualHeight}
-                                resolutionW={result.resolutionW}
-                                resolutionH={result.resolutionH}
-                                cabinetsW={result.cabinetsW}
-                                cabinetsH={result.cabinetsH}
-                            />
-
-                            <button
-                                className="export-pdf-button"
-                                onClick={handleExportPdf}
+                        {result ? (
+                            <>
+                                <ScreenPreview
+                                    ref={screenPreviewRef}
+                                    width={result.actualWidth}
+                                    height={result.actualHeight}
+                                    resolutionW={result.resolutionW}
+                                    resolutionH={result.resolutionH}
+                                    cabinetsW={result.cabinetsW}
+                                    cabinetsH={result.cabinetsH}
+                                />
+                            </>
+                        ) : (
+                            <div
+                                style={{
+                                    height: "500px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#6b7280",
+                                    fontSize: "18px",
+                                }}
                             >
-                                Export PDF
-                            </button>
-                        </div>
-                    )}
-                </section>
+                                Screen Preview
+                            </div>
+                        )}
+
+                    </div>
+
+                </div>
+
+                {result && (
+                    <div className="export-section">
+                        <ResultsPanel result={result} />
+
+                        <button
+                            className="export-pdf-button"
+                            onClick={handleExportPdf}
+                        >
+                            Export PDF
+                        </button>
+                    </div>
+                )}
+
             </main>
         </div>
     );

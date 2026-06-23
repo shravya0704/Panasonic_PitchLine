@@ -3,6 +3,10 @@ export interface Product {
 
   model: string;
 
+  seriesCode: string;
+
+  applicationType: string;
+
   pitch: number;
 
   brightness: number;
