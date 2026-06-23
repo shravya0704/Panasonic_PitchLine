@@ -1,14 +1,16 @@
-import { getSeriesFromModel } from "../lib/helpers/getSeriesFromModel";
+import { getSeriesFromModel }
+from "../lib/helpers/getSeriesFromModel";
 
-import { SeriesService } from "./seriesService";
+import { SeriesService }
+from "./seriesService";
 
 export const getBrochureForModel = (
   model: string
 ) => {
-  const series =
+  const seriesCode =
     getSeriesFromModel(model);
 
   return SeriesService.getSeries(
-    series
+    seriesCode
   );
 };

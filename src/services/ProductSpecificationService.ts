@@ -1,7 +1,8 @@
-import { ProductSpecificationRepository } from "../repositories/ProductSpecificationRepository";
+import { ProductSpecificationRepository }
+from "../repositories/ProductSpecificationRepository";
 
 export const ProductSpecificationService = {
-  getProductSpecifications(
+  async getProductSpecifications(
     model: string
   ) {
     return ProductSpecificationRepository.getByModel(

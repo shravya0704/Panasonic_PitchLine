@@ -17,6 +17,9 @@ import html2canvas from "html2canvas";
 import { Product } from "./types/Product";
 import { ConfigurationResult } from "./types/ConfigurationResult";
 
+import { BrochurePageService }
+    from "./services/BrochurePageService";
+
 
 
 function App() {
@@ -34,23 +37,23 @@ function App() {
                         await ProductService.getProducts();
 
                     console.log(
-                        JSON.stringify(
-                            data,
-                            null,
-                            2
-                        )
+                        "Products from DB:",
+                        data.length
+                    );
+
+                    const pages =
+                        await BrochurePageService.getPages(
+                            "PFP"
+                        );
+
+                    console.log(
+                        "Brochure Pages:",
+                        pages
                     );
 
                     setProducts(data);
                 } catch (error) {
-                    console.error(
-                        "Error loading products:",
-                        error
-                    );
-
-                    alert(
-                        "Failed to load products from database."
-                    );
+                    console.error(error);
                 } finally {
                     setLoadingProducts(false);
                 }

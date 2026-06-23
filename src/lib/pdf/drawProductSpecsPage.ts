@@ -1,15 +1,12 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
-import { ProductSpecificationService } from "../../services/ProductSpecificationService";
-
+import { PRODUCT_SPECS } from "../../data/productSpecifications";
 export const drawProductSpecsPage = (
   doc: jsPDF,
   product: Product
 ): void => {
   const specs =
-  ProductSpecificationService.getProductSpecifications(
-    product.model
-  );
+  PRODUCT_SPECS[product.model];
 
   if (!specs) {
     doc.setFontSize(12);

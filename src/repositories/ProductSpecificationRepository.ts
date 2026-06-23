@@ -1,9 +1,21 @@
-import { PRODUCT_SPECS } from "../data/productSpecifications";
+import { supabase } from "../lib/supabase";
 
 export const ProductSpecificationRepository = {
-  getByModel(
+  async getByModel(
     model: string
   ) {
-    return PRODUCT_SPECS[model];
+    const { data, error } =
+      await supabase
+        .from(
+          "product_specifications"
+        )
+        .select("*")
+        .eq("model", model);
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
   },
 };
