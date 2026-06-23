@@ -8,6 +8,7 @@ interface ScreenPreviewProps {
   resolutionH: number;
   cabinetsW: number;
   cabinetsH: number;
+  model?: string;
 }
 
 export const ScreenPreview = forwardRef<
@@ -22,18 +23,28 @@ export const ScreenPreview = forwardRef<
       resolutionH,
       cabinetsW,
       cabinetsH,
+      model,
     },
     ref
   ) => {
-    const scale = 100;
+    const MAX_PREVIEW_WIDTH = 450;
+    const MAX_PREVIEW_HEIGHT = 280;
+
+    const safeWidth = width || 1;
+    const safeHeight = height || 1;
+
+    const scale = Math.min(
+      MAX_PREVIEW_WIDTH / safeWidth,
+      MAX_PREVIEW_HEIGHT / safeHeight
+    );
 
     const screenWidthPx = width * scale;
     const screenHeightPx = height * scale;
 
-    const marginLeft = 80;
-    const marginRight = 80;
-    const marginTop = 70;
-    const marginBottom = 80;
+    const marginLeft = 60;
+    const marginRight = 60;
+    const marginTop = 50;
+    const marginBottom = 60;
 
     return (
       <div
@@ -46,9 +57,46 @@ export const ScreenPreview = forwardRef<
           color: "#000",
         }}
       >
-        <h2 style={{ textAlign: "center" }}>
-          Screen Preview
-        </h2>
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: "20px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "14px",
+              color: "#64748b",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+            }}
+          >
+            Live Preview
+          </div>
+
+          <div
+            style={{
+              fontSize: "34px",
+              fontWeight: 700,
+              color: "#005BAC",
+              marginBottom: "6px",
+            }}
+          >
+            Screen Configuration
+          </div>
+
+          {model && (
+            <div
+              style={{
+                fontSize: "15px",
+                fontWeight: 500,
+                color: "#475569",
+              }}
+            >
+              {model}
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -75,6 +123,7 @@ export const ScreenPreview = forwardRef<
             {/* Width */}
             <div
               style={{
+                display: "none",
                 position: "absolute",
                 top: 15,
                 left: "50%",
@@ -117,8 +166,8 @@ export const ScreenPreview = forwardRef<
                 backgroundPosition: "center",
               }}
             >
-              
-               
+
+
 
               {/* Vertical Cabinet Lines */}
               {Array.from({
@@ -178,8 +227,9 @@ export const ScreenPreview = forwardRef<
                 position: "absolute",
                 right: 15,
                 bottom: marginBottom,
-                width: 28,
-                height: 150,
+                width: 18,
+                height: 110,
+                opacity: 0.7,
                 background: "#888",
                 borderRadius: "20px 20px 0 0",
               }}
