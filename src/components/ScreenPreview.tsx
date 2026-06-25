@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import screenImage from "../assets/screen-preview.jpg";
+import humanSilhouette from "../assets/human.png";
 
 interface ScreenPreviewProps {
   width: number;
@@ -9,12 +10,16 @@ interface ScreenPreviewProps {
   cabinetsW: number;
   cabinetsH: number;
   model?: string;
+  brightness?: number;
+  pixelPitch?: number;
+  uploadedImage?: string | null; // Added custom background template simulation tracking property
+  result?: {
+    actualWidth: number;
+    actualHeight: number;
+  } | null;
 }
 
-export const ScreenPreview = forwardRef<
-  HTMLDivElement,
-  ScreenPreviewProps
->(
+export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
   (
     {
       width,
@@ -24,27 +29,37 @@ export const ScreenPreview = forwardRef<
       cabinetsW,
       cabinetsH,
       model,
+      brightness = 800,
+      pixelPitch = 1.875,
+      uploadedImage,
+      result,
     },
     ref
   ) => {
-    const MAX_PREVIEW_WIDTH = 450;
-    const MAX_PREVIEW_HEIGHT = 280;
+    const MAX_PREVIEW_WIDTH = 550;
+    const MAX_PREVIEW_HEIGHT = 360;
 
     const safeWidth = width || 1;
     const safeHeight = height || 1;
+
+    const displayWidthText = result?.actualWidth ? result.actualWidth.toFixed(2) : safeWidth.toFixed(2);
+    const displayHeightText = result?.actualHeight ? result.actualHeight.toFixed(2) : safeHeight.toFixed(2);
 
     const scale = Math.min(
       MAX_PREVIEW_WIDTH / safeWidth,
       MAX_PREVIEW_HEIGHT / safeHeight
     );
 
-    const screenWidthPx = width * scale;
-    const screenHeightPx = height * scale;
+    const screenWidthPx = safeWidth * scale;
+    const screenHeightPx = safeHeight * scale;
 
     const marginLeft = 60;
-    const marginRight = 60;
+    const marginRight = 90;
     const marginTop = 50;
     const marginBottom = 60;
+
+    // Fixed: Swapped to commercial round matching sales engineer presentation metrics
+    const viewingDistance = pixelPitch ? Math.round(pixelPitch * 1.5) : "-";
 
     return (
       <div
@@ -57,12 +72,7 @@ export const ScreenPreview = forwardRef<
           color: "#000",
         }}
       >
-        <div
-          style={{
-            textAlign: "center",
-            marginBottom: "20px",
-          }}
-        >
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
           <div
             style={{
               fontSize: "14px",
@@ -108,132 +118,165 @@ export const ScreenPreview = forwardRef<
         >
           <div
             style={{
-              position: "relative",
-              width:
-                screenWidthPx +
-                marginLeft +
-                marginRight,
-              height:
-                screenHeightPx +
-                marginTop +
-                marginBottom,
+              position: "relative" as const,
+              width: screenWidthPx + marginLeft + marginRight,
+              height: screenHeightPx + marginTop + marginBottom,
               background: "#e9e7e2",
             }}
           >
-            {/* Width */}
+            {/* Top Live Dimension Label */}
             <div
+              className="dimension-label top"
               style={{
-                display: "none",
-                position: "absolute",
+                display: "block",
+                position: "absolute" as const,
                 top: 15,
-                left: "50%",
+                left: `${marginLeft + screenWidthPx / 2}px`,
                 transform: "translateX(-50%)",
                 fontWeight: "bold",
                 fontSize: "20px",
               }}
             >
-              {width.toFixed(2)} m
+              {displayWidthText} m
             </div>
 
-            {/* Height */}
+            {/* Side Live Dimension Label */}
             <div
+              className="dimension-label side"
               style={{
-                position: "absolute",
+                position: "absolute" as const,
                 left: 15,
-                top: "50%",
-                transform:
-                  "translateY(-50%) rotate(-90deg)",
-                transformOrigin: "center",
+                top: `${marginTop + screenHeightPx / 2}px`,
+                transform: "translateY(-50%) rotate(-90deg)",
+                transformOrigin: "center" as const,
                 fontWeight: "bold",
                 fontSize: "18px",
               }}
             >
-              {height.toFixed(2)} m
+              {displayHeightText} m
             </div>
 
-            {/* Screen */}
+            {/* Hero Screen Viewport Container */}
             <div
               style={{
-                position: "absolute",
+                position: "absolute" as const,
                 top: marginTop,
                 left: marginLeft,
                 width: screenWidthPx,
                 height: screenHeightPx,
-                border: "3px solid red",
+                border: "2px solid #222",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
                 overflow: "hidden",
-                backgroundImage: `url(${screenImage})`,
+                backgroundImage: `url(${uploadedImage || screenImage})`, // Dynamically swaps templates inline
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
             >
-
-
-
-              {/* Vertical Cabinet Lines */}
+              {/* Cabinet Lines Vertical */}
               {Array.from({
-                length: cabinetsW - 1,
+                length: Math.max(0, cabinetsW - 1),
               }).map((_, i) => (
                 <div
                   key={`v-${i}`}
                   style={{
-                    position: "absolute",
-                    left: `${((i + 1) * 100) / cabinetsW}%`,
+                    position: "absolute" as const,
+                    left: `${((i + 1) * 100) / (cabinetsW || 1)}%`,
                     top: 0,
                     bottom: 0,
-                    borderLeft:
-                      "1px solid rgba(255,255,255,0.5)",
+                    borderLeft: "1px solid rgba(255,255,255,0.15)",
                   }}
                 />
               ))}
 
-              {/* Horizontal Cabinet Lines */}
+              {/* Cabinet Lines Horizontal */}
               {Array.from({
-                length: cabinetsH - 1,
+                length: Math.max(0, cabinetsH - 1),
               }).map((_, i) => (
                 <div
                   key={`h-${i}`}
                   style={{
-                    position: "absolute",
-                    top: `${((i + 1) * 100) / cabinetsH}%`,
+                    position: "absolute" as const,
+                    top: `${((i + 1) * 100) / (cabinetsH || 1)}%`,
                     left: 0,
                     right: 0,
-                    borderTop:
-                      "1px solid rgba(255,255,255,0.5)",
+                    borderTop: "1px solid rgba(255,255,255,0.15)",
                   }}
                 />
               ))}
             </div>
 
-            {/* Resolution */}
+            {/* Premium Panasonic Info Card Badge Overlay */}
             <div
               style={{
-                position: "absolute",
-                top:
-                  marginTop +
-                  screenHeightPx +
-                  15,
-                left: marginLeft,
-                fontWeight: "bold",
+                position: "absolute" as const,
+                top: 10,
+                right: 10,
+                background: "#e8f5e9",        /* Light premium green background */
+                border: "1px solid #a5d6a7",  /* Soft green outline */
+                color: "#1b5e20",             /* High-contrast dark green text color */
+                padding: "12px 16px",
+                borderRadius: "10px",
+                fontSize: "13px",
+                fontWeight: 600,
+                minWidth: "180px",
+                textAlign: "left" as const,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
               }}
             >
-              Resolution:{" "}
-              {resolutionW.toLocaleString()} ×{" "}
-              {resolutionH.toLocaleString()}
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  borderBottom: "1px solid rgba(46, 125, 50, 0.2)", /* Soft green divider line */
+                  paddingBottom: "4px",
+                  marginBottom: "6px",
+                  color: "#1b5e20"
+                }}
+              >
+                {(resolutionW ?? 0).toLocaleString()} × {(resolutionH ?? 0).toLocaleString()} px
+              </div>
+
+              <div style={{ marginTop: "6px", color: "#2e7d32" }}>
+                Pixel Pitch: {pixelPitch} mm
+              </div>
+
+              <div style={{ marginTop: "4px", color: "#2e7d32" }}>
+                Brightness: {brightness} nits
+              </div>
+
+              <div style={{ marginTop: "4px", color: "#2e7d32" }}>
+                Viewing Distance: {viewingDistance} m
+              </div>
             </div>
 
-            {/* Human silhouette */}
-            <div
+            {/* Silhouette Scale Anchor Reference */}
+            <img
+              src={humanSilhouette}
+              alt="Human Scale"
               style={{
-                position: "absolute",
-                right: 15,
+                position: "absolute" as const,
+                right: -75,
                 bottom: marginBottom,
-                width: 18,
-                height: 110,
-                opacity: 0.7,
-                background: "#888",
-                borderRadius: "20px 20px 0 0",
+                height: 140,
+                opacity: 0.45,
+                pointerEvents: "none",
               }}
             />
+
+            <div
+              style={{
+                position: "absolute" as const,
+                right: -85,
+                bottom: marginBottom - 20,
+                fontSize: "12px",
+                color: "#64748b",
+                fontWeight: 600,
+                pointerEvents: "none",
+              }}
+            >
+              183 cm Reference
+            </div>
+
           </div>
         </div>
       </div>

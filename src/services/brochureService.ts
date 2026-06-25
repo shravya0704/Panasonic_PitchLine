@@ -1,16 +1,27 @@
-import { getSeriesFromModel }
-from "../lib/helpers/getSeriesFromModel";
+import { SeriesService } from "./seriesService";
+import { BrochureRepository } from "../repositories/BrochureRepository";
 
-import { SeriesService }
-from "./seriesService";
+export const getBrochureForSeries =
+  async (
+    seriesCode: string
+  ) => {
+    const series =
+      await SeriesService.getSeries(
+        seriesCode
+      );
 
-export const getBrochureForModel = (
-  model: string
-) => {
-  const seriesCode =
-    getSeriesFromModel(model);
+    const pages =
+      await BrochureRepository.getPages(
+        seriesCode
+      );
 
-  return SeriesService.getSeries(
-    seriesCode
-  );
-};
+    return {
+      coverImage:
+        series.cover_image,
+
+      brochurePages:
+        pages.map(
+          (page) => page.image_url
+        ),
+    };
+  };

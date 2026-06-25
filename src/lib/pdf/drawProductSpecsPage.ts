@@ -1,59 +1,64 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
-import { PRODUCT_SPECS } from "../../data/productSpecifications";
-export const drawProductSpecsPage = (
+
+import { ProductSpecificationService }
+  from "../../services/ProductSpecificationService";
+export const drawProductSpecsPage = async (
   doc: jsPDF,
   product: Product
-): void => {
+): Promise<void> => {
   const specs =
-  PRODUCT_SPECS[product.model];
-
-  if (!specs) {
-    doc.setFontSize(12);
-
-    doc.text(
-      "No specification data available.",
-      20,
-      40
+    await ProductSpecificationService.getByModel(
+      product.model
     );
-
-    return;
-  }
-
-  doc.setFont(
-    "helvetica",
-    "bold"
+  console.log(
+    "PRODUCT SPECS JSON:",
+    JSON.stringify(specs, null, 2)
   );
 
-  doc.setFontSize(18);
+ if (
+  !specs ||
+  Object.keys(specs).length === 0
+) {
+  
+  return;
+}
 
-  doc.text(
-    "Product Specifications",
-    15,
-    20
-  );
+// NORMAL CASE
 
-  doc.setFontSize(12);
+doc.setFont(
+  "helvetica",
+  "bold"
+);
 
-  doc.text(
-    product.model,
-    15,
-    30
-  );
+doc.setFontSize(18);
 
-  doc.setDrawColor(
-    180,
-    180,
-    180
-  );
+doc.text(
+  "Product Specifications",
+  15,
+  20
+);
 
-  doc.line(
-    15,
-    35,
-    195,
-    35
-  );
+doc.setFontSize(12);
 
+doc.text(
+  product.model,
+  15,
+  30
+);
+
+doc.setDrawColor(
+  180,
+  180,
+  180
+);
+
+doc.line(
+  15,
+  35,
+  195,
+  35
+);
   const LEFT_X = 15;
   const RIGHT_X = 108;
 
@@ -120,11 +125,10 @@ export const drawProductSpecsPage = (
         );
 
         doc.text(
-          value,
+          value ?? "-",
           startX + 40,
           y
         );
-
         y += 6;
       }
     );
@@ -140,6 +144,16 @@ export const drawProductSpecsPage = (
 
   // LEFT COLUMN
 
+  const getSpec = (...keys: string[]) => {
+    for (const key of keys) {
+      if (specs[key]) {
+        return specs[key];
+      }
+    }
+
+    return "-";
+  };
+
   drawSection(
     "PHYSICAL PARAMETERS",
     [
@@ -149,8 +163,7 @@ export const drawProductSpecsPage = (
       ],
       [
         "Pixel Pitch",
-        specs["Pixel Pitch (mm)"] +
-          " mm",
+        getSpec("Pixel Pitch", "Pixel Pitch (mm)") + " mm",
       ],
       [
         "Module Resolution",
@@ -167,25 +180,25 @@ export const drawProductSpecsPage = (
       [
         "Modules Per Cabinet",
         specs[
-          "Modules Per Cabinet"
+        "Modules Per Cabinet"
         ],
       ],
       [
         "Cabinet Resolution",
         specs[
-          "Cabinet Resolution"
+        "Cabinet Resolution"
         ],
       ],
       [
         "Cabinet Dimensions",
         specs[
-          "Cabinet Dimensions"
+        "Cabinet Dimensions"
         ],
       ],
       [
         "Cabinet Surface Area",
         specs[
-          "Cabinet Surface Area"
+        "Cabinet Surface Area"
         ],
       ],
       [
@@ -194,22 +207,22 @@ export const drawProductSpecsPage = (
       ],
       [
         "Weight Per m²",
-        specs["Weight Per m²"],
+        specs["Weight Per Square Meter"] ?? "-"
       ],
       [
         "Flatness",
-        specs["Flatness"],
+        specs["Cabinet Flatness"] ?? "-"
       ],
       [
         "Cabinet Material",
         specs[
-          "Cabinet Material"
+        "Cabinet Material"
         ],
       ],
       [
         "Service Access",
         specs[
-          "Service Access"
+        "Service Access"
         ],
       ],
     ],
@@ -230,37 +243,37 @@ export const drawProductSpecsPage = (
       [
         "Color Temperature",
         specs[
-          "Color Temperature"
+        "Color Temperature"
         ],
       ],
       [
         "Viewing Angle",
         specs[
-          "Viewing Angle"
+        "Viewing Angle"
         ],
       ],
       [
         "Brightness Uniformity",
         specs[
-          "Brightness Uniformity"
+        "Brightness Uniformity"
         ],
       ],
       [
         "Color Uniformity",
         specs[
-          "Color Uniformity"
+        "Color Uniformity"
         ],
       ],
       [
         "Contrast Ratio",
         specs[
-          "Contrast Ratio"
+        "Contrast Ratio"
         ],
       ],
       [
         "Processing Depth",
         specs[
-          "Processing Depth"
+        "Processing Depth"
         ],
       ],
     ],
@@ -273,16 +286,12 @@ export const drawProductSpecsPage = (
     "ELECTRICAL SPECIFICATIONS",
     [
       [
-        "Power Consumption (Max)",
-        specs[
-          "Power Consumption (Max)"
-        ],
+        "Power Consumption Max",
+        getSpec("Power Consumption Max", "Power Consumption (Max)"),
       ],
       [
-        "Power Consumption (Avg)",
-        specs[
-          "Power Consumption (Average)"
-        ],
+        "Power Consumption Average",
+        getSpec("Power Consumption Average", "Power Consumption (Average)"),
       ],
       [
         "Power Supply",
@@ -305,11 +314,11 @@ export const drawProductSpecsPage = (
     [
       [
         "LED Lifetime",
-        specs["LED Lifetime"],
+        specs["LED Lifetime"] ?? "-",
       ],
       [
         "Application",
-        specs["Application"],
+        specs["Application"] ?? "-",
       ],
     ],
     "right"
@@ -321,13 +330,13 @@ export const drawProductSpecsPage = (
       [
         "Operating Temp.",
         specs[
-          "Operating Temperature"
+        "Operating Temperature"
         ],
       ],
       [
         "Operating Humidity",
         specs[
-          "Operating Humidity"
+        "Operating Humidity"
         ],
       ],
       [

@@ -12,10 +12,22 @@ import html2canvas from "html2canvas";
 import { Product } from "./types/Product";
 import { ConfigurationResult } from "./types/ConfigurationResult";
 import { BrochurePageService } from "./services/BrochurePageService";
+import { ProposalService } from "./services/ProposalService";
+import { generateProposalId } from "./lib/generateProposalId";
+import { ExportProposalModal } from "./components/ExportProposalModal";
 
 function App() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
+    const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [proposalInfo, setProposalInfo] = useState({
+        projectName: "",
+        customerName: "",
+        companyName: "",
+        email: "",
+    });
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -60,7 +72,14 @@ function App() {
         }
     };
 
-    const handleExportPdf = async () => {
+    const handleExportPdf = async (
+        proposalData?: {
+            projectName: string;
+            customerName: string;
+            companyName: string;
+            email: string;
+        }
+    ) => {
         if (!selectedProduct || !result) {
             alert("Please calculate a configuration first.");
             return;
@@ -76,7 +95,31 @@ function App() {
                 imageData = canvas.toDataURL("image/png");
             }
 
-            await generatePdf(selectedProduct, result, width, height, imageData);
+            const proposalId = generateProposalId();
+
+            // Step 3 — Secure Lead Logging via active database persistence service
+            if (proposalData) {
+              await ProposalService.createProposal(
+                {
+                  ...proposalData,
+                  proposalId,
+                },
+                selectedProduct,
+                result,
+                width,
+                height
+              );
+            }
+
+            await generatePdf(
+                selectedProduct,
+                result,
+                width,
+                height,
+                imageData,
+                proposalData,
+                proposalId
+            );
         } catch (error) {
             alert(
                 `Error exporting PDF: ${error instanceof Error ? error.message : "Unknown error"
@@ -115,6 +158,8 @@ function App() {
                             height={height}
                             setHeight={setHeight}
                             onCalculate={handleCalculate}
+                            uploadedImage={uploadedImage}
+                            setUploadedImage={setUploadedImage}
                         />
                     </div>
 
@@ -129,6 +174,10 @@ function App() {
                                     cabinetsW={result.cabinetsW}
                                     cabinetsH={result.cabinetsH}
                                     model={`${selectedProduct?.applicationType} | ${selectedProduct?.seriesCode} | ${selectedProduct?.model}`}
+                                    brightness={selectedProduct?.brightness}
+                                    pixelPitch={selectedProduct?.pitch}
+                                    result={result}
+                                    uploadedImage={uploadedImage}
                                 />
                             </div>
                         ) : (
@@ -139,16 +188,30 @@ function App() {
 
                 {result && (
                     <div className="export-section">
-                        <ResultsPanel result={result} />
+                        <ResultsPanel
+                            result={result}
+                            selectedProduct={selectedProduct}
+                        />
                         <button
                             className="export-pdf-button"
-                            onClick={handleExportPdf}
+                            onClick={() => setShowExportModal(true)}
                         >
                             Export PDF
                         </button>
                     </div>
                 )}
             </main>
+
+            {showExportModal && (
+                <ExportProposalModal
+                    onClose={() => setShowExportModal(false)}
+                    onSubmit={(data) => {
+                        setProposalInfo(data);
+                        setShowExportModal(false);
+                        handleExportPdf(data);
+                    }}
+                />
+            )}
         </div>
     );
 }

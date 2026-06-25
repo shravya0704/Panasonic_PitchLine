@@ -1,13 +1,15 @@
 import { SeriesRepository } from "../repositories/SeriesRepository";
 
 export const SeriesService = {
-  getSeries(
-    id: string
+  async getSeries(
+    code: string
   ) {
-    return SeriesRepository.getById(id);
+    return await SeriesRepository.getByCode(
+      code
+    );
   },
 
-  getAllSeries() {
-    return SeriesRepository.getAll();
+  async getAllSeries() {
+    return await SeriesRepository.getAll();
   },
 };
