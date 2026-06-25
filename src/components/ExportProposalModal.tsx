@@ -17,6 +17,7 @@ export const ExportProposalModal = ({
   onClose,
   onSubmit,
 }: ExportProposalModalProps) => {
+
   const [projectName, setProjectName] =
     useState("");
 
@@ -30,16 +31,21 @@ export const ExportProposalModal = ({
     useState("");
 
   const handleSubmit = () => {
+    const emailRegex =
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (
       !projectName ||
       !customerName ||
       !companyName ||
       !email
     ) {
-      alert(
-        "All fields are mandatory."
-      );
+      alert("All fields are mandatory.");
+      return;
+    }
 
+    if (!emailRegex.test(email)) {
+      alert("Please enter a valid email.");
       return;
     }
 
@@ -54,67 +60,45 @@ export const ExportProposalModal = ({
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        <h2>
-          Proposal Information
-        </h2>
+        <h2>Proposal Information</h2>
 
         <div className="form-group">
-          <label>
-            Project Name *
-          </label>
-
+          <label>Project Name *</label>
           <input
             value={projectName}
             onChange={(e) =>
-              setProjectName(
-                e.target.value
-              )
+              setProjectName(e.target.value)
             }
           />
         </div>
 
         <div className="form-group">
-          <label>
-            Customer Name *
-          </label>
-
+          <label>Customer Name *</label>
           <input
             value={customerName}
             onChange={(e) =>
-              setCustomerName(
-                e.target.value
-              )
+              setCustomerName(e.target.value)
             }
           />
         </div>
 
         <div className="form-group">
-          <label>
-            Company Name *
-          </label>
-
+          <label>Company Name *</label>
           <input
             value={companyName}
             onChange={(e) =>
-              setCompanyName(
-                e.target.value
-              )
+              setCompanyName(e.target.value)
             }
           />
         </div>
 
         <div className="form-group">
-          <label>
-            Email *
-          </label>
-
+          <label>Email *</label>
           <input
             type="email"
             value={email}
             onChange={(e) =>
-              setEmail(
-                e.target.value
-              )
+              setEmail(e.target.value)
             }
           />
         </div>
@@ -126,15 +110,11 @@ export const ExportProposalModal = ({
             marginTop: "20px",
           }}
         >
-          <button
-            onClick={onClose}
-          >
+          <button onClick={onClose}>
             Cancel
           </button>
 
-          <button
-            onClick={handleSubmit}
-          >
+          <button onClick={handleSubmit}>
             Generate Proposal
           </button>
         </div>

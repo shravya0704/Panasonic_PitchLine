@@ -1,15 +1,21 @@
 export const generateProposalId = () => {
-  const now = new Date();
+  const date = new Date();
 
-  const date = now
-    .toISOString()
-    .slice(0, 10)
-    .replace(/-/g, "");
+  const y = date.getFullYear();
 
-  const random = Math.random()
-    .toString(36)
-    .substring(2, 8)
-    .toUpperCase();
+  const m = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
 
-  return `PAN-${date}-${random}`;
+  const d = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  const randomPart =
+    crypto.randomUUID()
+      .replace(/-/g, "")
+      .substring(0, 6)
+      .toUpperCase();
+
+  return `PAN-${y}${m}${d}-${randomPart}`;
 };
