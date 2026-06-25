@@ -5,9 +5,11 @@ export const ProductService = {
     return ProductRepository.getAll();
   },
 
-  async getProduct(
-    id: string
-  ) {
+  async getProduct(id: string) {
     return ProductRepository.getById(id);
+  },
+
+  async deleteProduct(id: string) {
+    return ProductRepository.delete(id);
   },
 };
