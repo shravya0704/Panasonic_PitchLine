@@ -1,5 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { Product } from "../types/Product";
+import { ProductMapper } from "../mappers/ProductMapper";
 
 export const ProductRepository = {
   async getAll(): Promise<Product[]> {
@@ -11,21 +12,7 @@ export const ProductRepository = {
       throw error;
     }
 
-    return (
-      data?.map((row) => ({
-        id: row.id,
-        model: row.model,
-        seriesCode: row.series_code,
-        applicationType: row.application_type,
-        pitch: row.pitch,
-        brightness: row.brightness,
-        cabinetWidth: row.cabinet_width,
-        cabinetHeight: row.cabinet_height,
-        cabinetResolutionW: row.cabinet_resolution_w,
-        cabinetResolutionH: row.cabinet_resolution_h,
-        modulesPerCabinet: row.modules_per_cabinet,
-      })) ?? []
-    );
+    return data?.map(ProductMapper.fromDatabase) ?? [];
   },
 
   async getById(id: string): Promise<Product | undefined> {
@@ -39,19 +26,7 @@ export const ProductRepository = {
       throw error;
     }
 
-    return {
-      id: data.id,
-      model: data.model,
-      seriesCode: data.series_code,
-      applicationType: data.application_type,
-      pitch: data.pitch,
-      brightness: data.brightness,
-      cabinetWidth: data.cabinet_width,
-      cabinetHeight: data.cabinet_height,
-      cabinetResolutionW: data.cabinet_resolution_w,
-      cabinetResolutionH: data.cabinet_resolution_h,
-      modulesPerCabinet: data.modules_per_cabinet,
-    };
+    return ProductMapper.fromDatabase(data);
   },
 
   async delete(id: string): Promise<void> {
@@ -59,6 +34,27 @@ export const ProductRepository = {
       .from("products")
       .delete()
       .eq("id", id);
+
+    if (error) {
+      throw error;
+    }
+  },
+
+  async create(product: Product): Promise<void> {
+    const { error } = await supabase
+      .from("products")
+      .insert(ProductMapper.toDatabase(product));
+
+    if (error) {
+      throw error;
+    }
+  },
+
+  async update(product: Product): Promise<void> {
+    const { error } = await supabase
+      .from("products")
+      .update(ProductMapper.toDatabase(product))
+      .eq("id", product.id);
 
     if (error) {
       throw error;

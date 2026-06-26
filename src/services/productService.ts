@@ -1,4 +1,5 @@
 import { ProductRepository } from "../repositories/ProductRepository";
+import { Product } from "../types/Product"; // 💡 Added this import line
 
 export const ProductService = {
   async getProducts() {
@@ -11,5 +12,13 @@ export const ProductService = {
 
   async deleteProduct(id: string) {
     return ProductRepository.delete(id);
+  },
+
+  async createProduct(product: Product) {
+    return ProductRepository.create(product);
+  },
+
+  async updateProduct(product: Product) {
+    return ProductRepository.update(product);
   },
 };

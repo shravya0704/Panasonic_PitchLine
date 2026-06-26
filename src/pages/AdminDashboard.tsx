@@ -3,23 +3,17 @@ import { useNavigate } from "react-router-dom";
 
 import DashboardSidebar from "../components/admin/DashboardSidebar";
 import ProductsPage from "../components/admin/ProductsPage";
-import LeadsPage from "../components/admin/LeadsPage";
+import ProposalLeadsPage from "../components/admin/ProposalLeadsPage";
 
-function SettingsPage() {
-  return <div>Settings</div>;
-}
+import SettingsPage from "../components/admin/SettingsPage";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
-  const [selectedPage, setSelectedPage] =
-    useState("Products");
+  const [selectedPage, setSelectedPage] = useState("Products");
 
   const logout = () => {
-    sessionStorage.removeItem(
-      "adminLoggedIn"
-    );
-
+    sessionStorage.removeItem("adminLoggedIn");
     navigate("/admin");
   };
 
@@ -29,7 +23,7 @@ export default function AdminDashboard() {
         return <ProductsPage />;
 
       case "Leads":
-        return <LeadsPage />;
+        return <ProposalLeadsPage />;
 
       case "Settings":
         return <SettingsPage />;

@@ -1,18 +1,23 @@
 import { Product } from "../../types/Product";
-// Make sure this points to your single, unified ProductService file
-import { ProductService } from "../../services/ProductService"; 
+import { ProductService } from "../../services/ProductService";
+import AdminButton from "./ui/AdminButton";
+import AdminTable from "./ui/AdminTable";
 
 interface Props {
   products: Product[];
   refresh: () => void;
+  onEdit: (product: Product) => void;
 }
 
-export default function ProductTable({ products, refresh }: Props) {
+export default function ProductTable({
+  products,
+  refresh,
+  onEdit,
+}: Props) {
   const remove = async (id: string) => {
     if (!window.confirm("Delete this product?")) return;
 
     try {
-      // Changed from AdminProductService to our consolidated ProductService
       await ProductService.deleteProduct(id);
       refresh();
     } catch (error) {
@@ -21,28 +26,81 @@ export default function ProductTable({ products, refresh }: Props) {
   };
 
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <AdminTable>
       <thead>
-        <tr>
-          <th>Application</th>
-          <th>Series</th>
-          <th>Model</th>
-          <th>Actions</th>
+        <tr
+          style={{
+            background: "#F4F7FB",
+            textAlign: "left",
+          }}
+        >
+          <th style={{ padding: 16, width: "22%" }}>Application</th>
+          <th style={{ padding: 16, width: "18%" }}>Series</th>
+          <th style={{ padding: 16 }}>Model</th>
+          <th
+            style={{
+              padding: 16,
+              width: 180,
+              textAlign: "center",
+            }}
+          >
+            Actions
+          </th>
         </tr>
       </thead>
+
       <tbody>
-        {products.map((product) => (
-          <tr key={product.id}>
-            <td>{product.applicationType}</td>
-            <td>{product.seriesCode}</td>
-            <td>{product.model}</td>
-            <td>
-              <button style={{ marginRight: 8 }}>Edit</button>
-              <button onClick={() => remove(product.id)}>Delete</button>
+        {products.map((product, index) => (
+          <tr
+            key={product.id}
+            style={{
+              background:
+                index % 2 === 0 ? "#FFFFFF" : "#FAFBFD",
+            }}
+          >
+            <td style={{ padding: 16 }}>
+              {product.applicationType}
+            </td>
+
+            <td style={{ padding: 16 }}>
+              {product.seriesCode}
+            </td>
+
+            <td style={{ padding: 16 }}>
+              {product.model}
+            </td>
+
+            <td
+              style={{
+                padding: 16,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 10,
+                }}
+              >
+                <AdminButton
+                  type="secondary"
+                  onClick={() => onEdit(product)}
+                >
+                  Edit
+                </AdminButton>
+
+                <AdminButton
+                  type="danger"
+                  onClick={() => remove(product.id)}
+                >
+                  Delete
+                </AdminButton>
+              </div>
             </td>
           </tr>
         ))}
       </tbody>
-    </table>
+    </AdminTable>
   );
 }

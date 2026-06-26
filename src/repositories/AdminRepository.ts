@@ -14,4 +14,14 @@ export const AdminRepository = {
 
     return data?.[0]?.admin_password;
   },
+  async updatePassword(password: string) {
+  const { error } = await supabase
+    .from("admin_settings")
+    .update({
+      admin_password: password,
+    })
+    .eq("id", 1);
+
+  if (error) throw error;
+}
 };
