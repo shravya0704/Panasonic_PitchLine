@@ -6,7 +6,7 @@ import {
 import ConfiguratorPage from "./pages/ConfiguratorPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./pages/ProtectedRoute";
 function App() {
   return (
     <Routes>

@@ -1,20 +1,22 @@
 import "../App.css";
 import panasonicLogo from "../assets/Panasonic-logo.jpg";
 import { useEffect, useRef, useState } from "react";
-import { ProductService } from "../services/productService";
+import html2canvas from "html2canvas";
+
+import { ProductService } from "../services/ProductService";
 import { calculateConfiguration } from "../lib/calculations/calculateConfiguration";
 import { generatePdf } from "../lib/pdf/generatePdf";
-import { ConfigForm } from "../components/ConfigForm";
-import { ResultsPanel } from "../components/ResultsPanel";
-import { ScreenPreview } from "../components/ScreenPreview";
-import html2canvas from "html2canvas";
+
+import { ConfigForm } from "../components/configurator/ConfigForm";
+import { ResultsPanel } from "../components/configurator/ResultsPanel";
+import { ScreenPreview } from "../components/configurator/ScreenPreview";
+import { ExportProposalModal } from "../components/configurator/ExportProposalModal";
 
 import { Product } from "../types/Product";
 import { ConfigurationResult } from "../types/ConfigurationResult";
 import { BrochurePageService } from "../services/BrochurePageService";
 import { ProposalService } from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
-import { ExportProposalModal } from "../components/ExportProposalModal";
 
 function ConfiguratorPage() {
     const [products, setProducts] = useState<Product[]>([]);

@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
-import screenImage from "../assets/screen-preview.jpg";
-import humanSilhouette from "../assets/human.png";
+const screenImage = new URL("../../assets/screen-preview.jpg", import.meta.url).href;
+const human = new URL("../../assets/human.png", import.meta.url).href;
 
 interface ScreenPreviewProps {
   width: number;
@@ -251,7 +251,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
             {/* Silhouette Scale Anchor Reference */}
             <img
-              src={humanSilhouette}
+              src={human}
               alt="Human Scale"
               style={{
                 position: "absolute" as const,

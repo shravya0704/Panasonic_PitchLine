@@ -1,5 +1,5 @@
-import { ConfigurationResult } from "../types/ConfigurationResult";
-import { Product } from "../types/Product";
+import { ConfigurationResult } from "../../types/ConfigurationResult";
+import { Product } from "../../types/Product";
 
 interface ResultsPanelProps {
     result: ConfigurationResult | null;

@@ -1,5 +1,5 @@
 import React from "react";
-import { generateDataPaths } from "../lib/calculations/generateDataPaths";
+import { generateDataPaths } from "../../lib/calculations/generateDataPaths";
 
 interface DataDiagramProps {
   cabinetsW: number;

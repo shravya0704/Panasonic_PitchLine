@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Product } from "../types/Product";
+import { Product } from "../../types/Product";
 
 interface ConfigFormProps {
   products: Product[];
