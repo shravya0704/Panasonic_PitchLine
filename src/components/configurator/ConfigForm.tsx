@@ -65,144 +65,217 @@ export const ConfigForm = ({
     setModelId("");
   }, [seriesCode]);
 
+  // Helper functions to handle limits safely and cleanly
+  const adjustWidth = (newValue: number) => {
+    const clamped = Math.max(0.5, Math.min(100, Number(newValue.toFixed(2))));
+    setWidth(clamped);
+  };
+
+  const adjustHeight = (newValue: number) => {
+    const clamped = Math.max(0.5, Math.min(30, Number(newValue.toFixed(2))));
+    setHeight(clamped);
+  };
+
   return (
     <div className="config-form">
-      <h2>LED Display Configurator</h2>
+      <h2>Display Configuration</h2>
+      <p className="config-subtitle">
+        Configure your Panasonic LED display
+      </p>
 
-      {/* Application Dropdown */}
-      <div className="form-group">
-        <label>Application Type</label>
-        <select
-          value={applicationType}
-          onChange={(e) => setApplicationType(e.target.value)}
-        >
-          <option value="">Select Application</option>
-          {applicationTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* SECTION 1: DISPLAY DROPDOWNS */}
+      <div className="config-section">
+        <div className="config-section-title">DISPLAY</div>
 
-      {/* Series Dropdown */}
-      <div className="form-group">
-        <label>Series</label>
-        <select
-          value={seriesCode}
-          onChange={(e) => setSeriesCode(e.target.value)}
-          disabled={!applicationType}
-        >
-          <option value="">Select Series</option>
-          {seriesList.map((series) => (
-            <option key={series} value={series}>
-              {series}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Model Dropdown */}
-      <div className="form-group">
-        <label>Model</label>
-        <select
-          value={modelId}
-          disabled={!seriesCode}
-          onChange={(e) => {
-            setModelId(e.target.value);
-            const product = products.find((p) => p.id === e.target.value);
-            if (product) {
-              setSelectedProduct(product);
-            }
-          }}
-        >
-          <option value="">Select Model</option>
-          {modelsList.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.model}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Validation Specifications Card Info Deck */}
-      {selectedProduct && (
-        <div className="selected-model-card" style={{ marginTop: "12px", padding: "12px", border: "1px dashed #ccc", borderRadius: "6px" }}>
-          <strong>{selectedProduct.model}</strong>
-          <div>Pitch: {selectedProduct.pitch} mm</div>
-          <div>Brightness: {selectedProduct.brightness} nits</div>
+        {/* Application Dropdown */}
+        <div className="form-group">
+          <label className="section-label">APPLICATION</label>
+          <select
+            value={applicationType}
+            onChange={(e) => setApplicationType(e.target.value)}
+          >
+            <option value="">Select Application</option>
+            {applicationTypes.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
 
-      {/* Environmental Background Loader Placement */}
-      <div className="form-group" style={{ marginTop: "16px" }}>
-        <label>Preview Image</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = () => {
-              setUploadedImage(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-          }}
-        />
-      </div>
-
-      {/* Width Setting */}
-      <div className="form-group">
-        <label>Width (meters)</label>
-        <div className="dimension-control">
-          <button
-            type="button"
-            onClick={() => setWidth(Math.max(1, width - 1))}
+        {/* Series Dropdown */}
+        <div className="form-group">
+          <label className="section-label">SERIES</label>
+          <select
+            value={seriesCode}
+            onChange={(e) => setSeriesCode(e.target.value)}
+            disabled={!applicationType}
           >
-            −
-          </button>
-          <div className="dimension-value">
-            {width} m
-          </div>
-          <button
-            type="button"
-            onClick={() => setWidth(width + 1)}
+            <option value="">Select Series</option>
+            {seriesList.map((series) => (
+              <option key={series} value={series}>
+                {series}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Model Dropdown */}
+        <div className="form-group">
+          <label className="section-label">MODEL</label>
+          <select
+            value={modelId}
+            disabled={!seriesCode}
+            onChange={(e) => {
+              setModelId(e.target.value);
+              const product = products.find((p) => p.id === e.target.value);
+              if (product) {
+                setSelectedProduct(product);
+              }
+            }}
           >
-            +
-          </button>
+            <option value="">Select Model</option>
+            {modelsList.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.model}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Height Setting */}
-      <div className="form-group">
-        <label>Height (meters)</label>
-        <div className="dimension-control">
-          <button
-            type="button"
-            onClick={() => setHeight(Math.max(1, height - 1))}
-          >
-            −
-          </button>
-          <div className="dimension-value">
-            {height} m
+      {/* SECTION 2: SELECTED PRODUCT SUMMARY */}
+      <div className="config-section">
+        <div className="config-section-title">SELECTED PRODUCT</div>
+        {selectedProduct && (
+          <div className="selected-model-card">
+            <div className="selected-title">
+              Selected Product
+            </div>
+            <div className="selected-model">
+              {selectedProduct.model}
+            </div>
+            <div className="selected-spec">
+              Pixel Pitch
+              <span>{selectedProduct.pitch} mm</span>
+            </div>
+            <div className="selected-spec">
+              Brightness
+              <span>{selectedProduct.brightness} nits</span>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setHeight(height + 1)}
-          >
-            +
-          </button>
+        )}
+      </div>
+
+      {/* SECTION 3: PREVIEW IMAGE UPLOAD */}
+      <div className="config-section">
+        <div className="config-section-title">PREVIEW</div>
+        <div className="form-group">
+          <label className="section-label">PREVIEW IMAGE</label>
+          <label className="upload-card">
+            <input
+              className="upload-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                  setUploadedImage(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+            <div className="upload-icon">🖼️</div>
+            <div className="upload-title">
+              {uploadedImage ? "Image Selected" : "Upload Preview Image"}
+            </div>
+            <div className="upload-subtitle">PNG • JPG • JPEG</div>
+          </label>
+        </div>
+      </div>
+
+      {/* SECTION 4: DISPLAY DIMENSIONS CONTROLS */}
+      <div className="config-section">
+        <div className="config-section-title">DISPLAY SIZE</div>
+        
+        {/* Width Setting */}
+        <div className="form-group">
+          <label className="section-label">DISPLAY WIDTH</label>
+          {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
+          <div className="dimension-card">
+            <div className="dimension-control">
+              <button
+                type="button"
+                onClick={() => adjustWidth(width - 0.1)}
+              >
+                −
+              </button>
+              <div className="dimension-value">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.5"
+                  max="100"
+                  value={width}
+                  onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
+                  onBlur={() => adjustWidth(width)}
+                />
+                <span>m</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustWidth(width + 0.1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Height Setting */}
+        <div className="form-group">
+          <label className="section-label">DISPLAY HEIGHT</label>
+          {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
+          <div className="dimension-card">
+            <div className="dimension-control">
+              <button
+                type="button"
+                onClick={() => adjustHeight(height - 0.1)}
+              >
+                −
+              </button>
+              <div className="dimension-value">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.5"
+                  max="30"
+                  value={height}
+                  onChange={(e) => setHeight(parseFloat(e.target.value) || 0)}
+                  onBlur={() => adjustHeight(height)}
+                />
+                <span>m</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustHeight(height + 0.1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       <button
         className="calculate-button"
         onClick={onCalculate}
-        disabled={!selectedProduct || width <= 0 || height <= 0}
+        disabled={!selectedProduct || width < 0.5 || height < 0.5}
       >
-        Calculate Configuration
+        Generate Configuration
       </button>
     </div>
   );

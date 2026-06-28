@@ -135,15 +135,18 @@ function ConfiguratorPage() {
 
     return (
         <div className="app-container">
+            {/* 💡 CHANGED: New header structure enclosing logo and text container seamlessly */}
             <header className="app-header">
-                <img
-                    src={panasonicLogo}
-                    alt="Panasonic"
-                    className="company-logo"
-                />
-                <div>
-                    <h1>LED Display Configurator</h1>
-                    <p>Professional LED Wall Design & Proposal Generator</p>
+                <div className="app-header-left">
+                    <img
+                        src={panasonicLogo}
+                        alt="Panasonic"
+                        className="company-logo"
+                    />
+                    <div className="app-header-content">
+                        <h1>LED Display Configurator</h1>
+                        <p>Professional LED Wall Design & Proposal Generator</p>
+                    </div>
                 </div>
             </header>
 

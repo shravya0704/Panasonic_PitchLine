@@ -7,7 +7,10 @@ export const ProposalRepository = {
       .from("proposals")
       .insert(data);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Proposal insert error:", error);
+      throw error;
+    }
   },
 
   async getAll() {
@@ -18,7 +21,9 @@ export const ProposalRepository = {
         ascending: false,
       });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     return data;
   },

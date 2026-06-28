@@ -44,6 +44,26 @@ export const calculateConfiguration = (
   const totalArea =
     actualWidth * actualHeight;
 
+  const maximumPower =
+    totalArea *
+    product.maxPowerPerM2;
+
+  const averagePower =
+    totalArea *
+    product.avgPowerPerM2;
+
+  const maximumHeat =
+    maximumPower;
+
+  const averageHeat =
+    averagePower;
+
+  const maximumHeatBTU =
+    maximumPower * 3.412;
+
+  const averageHeatBTU =
+    averagePower * 3.412;
+
   return {
     cabinetsW,
     cabinetsH,
@@ -58,5 +78,17 @@ export const calculateConfiguration = (
     resolutionH,
 
     totalArea,
+
+    maximumPower,
+
+    averagePower,
+
+    maximumHeat,
+
+    averageHeat,
+
+    maximumHeatBTU,
+
+    averageHeatBTU,
   };
 };

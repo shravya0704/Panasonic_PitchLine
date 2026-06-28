@@ -14,6 +14,11 @@ export const ProductMapper = {
       cabinetResolutionW: row.cabinet_resolution_w,
       cabinetResolutionH: row.cabinet_resolution_h,
       modulesPerCabinet: row.modules_per_cabinet,
+      maxPowerPerM2:
+        row.max_power_per_m2,
+
+      avgPowerPerM2:
+        row.avg_power_per_m2,
     };
   },
 
@@ -29,6 +34,11 @@ export const ProductMapper = {
       cabinet_resolution_w: product.cabinetResolutionW,
       cabinet_resolution_h: product.cabinetResolutionH,
       modules_per_cabinet: product.modulesPerCabinet,
+      max_power_per_m2:
+        product.maxPowerPerM2,
+
+      avg_power_per_m2:
+        product.avgPowerPerM2,
     };
   },
 };

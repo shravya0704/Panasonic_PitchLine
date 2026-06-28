@@ -53,10 +53,10 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const screenWidthPx = safeWidth * scale;
     const screenHeightPx = safeHeight * scale;
 
-    const marginLeft = 60;
-    const marginRight = 90;
-    const marginTop = 50;
-    const marginBottom = 60;
+    const marginLeft = 80;
+    const marginRight = 120;
+    const marginTop = 70;
+    const marginBottom = 80;
 
     // Fixed: Swapped to commercial round matching sales engineer presentation metrics
     const viewingDistance = pixelPitch ? Math.round(pixelPitch * 1.5) : "-";
@@ -67,18 +67,21 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
         style={{
           marginTop: "40px",
           padding: "30px",
-          background: "#f3f1eb",
-          borderRadius: "10px",
+          background: "#FFFFFF",
+          borderRadius: "18px",
+          border: "1px solid #E2E8F0",
+          boxShadow: "0 10px 30px rgba(15,23,42,.06)",
           color: "#000",
         }}
       >
         <div style={{ textAlign: "center", marginBottom: "20px" }}>
           <div
             style={{
-              fontSize: "14px",
-              color: "#64748b",
+              fontSize: "12px",
+              fontWeight: 700,
+              letterSpacing: "2px",
+              color: "#005BAC",
               textTransform: "uppercase",
-              letterSpacing: "1px",
             }}
           >
             Live Preview
@@ -86,9 +89,9 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
           <div
             style={{
-              fontSize: "34px",
+              fontSize: "42px",
               fontWeight: 700,
-              color: "#005BAC",
+              color: "#0F172A",
               marginBottom: "6px",
             }}
           >
@@ -96,13 +99,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
           </div>
 
           {model && (
-            <div
-              style={{
-                fontSize: "15px",
-                fontWeight: 500,
-                color: "#475569",
-              }}
-            >
+            <div className="preview-model-badge">
               {model}
             </div>
           )}
@@ -121,10 +118,10 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               position: "relative" as const,
               width: screenWidthPx + marginLeft + marginRight,
               height: screenHeightPx + marginTop + marginBottom,
-              background: "#e9e7e2",
+              background: "#F8FAFC",
             }}
           >
-            {/* Top Live Dimension Label */}
+            {/* 💡 CHANGE 5: Top Engineering Annotation Label */}
             <div
               className="dimension-label top"
               style={{
@@ -133,14 +130,19 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 top: 15,
                 left: `${marginLeft + screenWidthPx / 2}px`,
                 transform: "translateX(-50%)",
-                fontWeight: "bold",
-                fontSize: "20px",
+                fontWeight: 600,
+                fontSize: "16px",
+                background: "#FFFFFF",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid #E2E8F0",
+                boxShadow: "0 2px 8px rgba(15,23,42,.05)",
               }}
             >
               {displayWidthText} m
             </div>
 
-            {/* Side Live Dimension Label */}
+            {/* 💡 CHANGE 5: Side Engineering Annotation Label */}
             <div
               className="dimension-label side"
               style={{
@@ -149,8 +151,13 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 top: `${marginTop + screenHeightPx / 2}px`,
                 transform: "translateY(-50%) rotate(-90deg)",
                 transformOrigin: "center" as const,
-                fontWeight: "bold",
-                fontSize: "18px",
+                fontWeight: 600,
+                fontSize: "16px",
+                background: "#FFFFFF",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid #E2E8F0",
+                boxShadow: "0 2px 8px rgba(15,23,42,.05)",
               }}
             >
               {displayHeightText} m
@@ -164,8 +171,9 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 left: marginLeft,
                 width: screenWidthPx,
                 height: screenHeightPx,
-                border: "2px solid #222",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                /* 💡 CHANGE 3: Technical Cad Drawing Border & Drop Shadow */
+                border: "1px solid #CBD5E1",
+                boxShadow: "0 12px 32px rgba(15,23,42,.12)",
                 overflow: "hidden",
                 backgroundImage: `url(${uploadedImage || screenImage})`, // Dynamically swaps templates inline
                 backgroundSize: "cover",
@@ -183,7 +191,8 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     left: `${((i + 1) * 100) / (cabinetsW || 1)}%`,
                     top: 0,
                     bottom: 0,
-                    borderLeft: "1px solid rgba(255,255,255,0.15)",
+                    /* 💡 CHANGE 4: Dashed Structural Blueprint Metric */
+                    borderLeft: "1px dashed rgba(255,255,255,.22)",
                   }}
                 />
               ))}
@@ -199,7 +208,8 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     top: `${((i + 1) * 100) / (cabinetsH || 1)}%`,
                     left: 0,
                     right: 0,
-                    borderTop: "1px solid rgba(255,255,255,0.15)",
+                    /* 💡 CHANGE 4: Dashed Structural Blueprint Metric */
+                    borderTop: "1px dashed rgba(255,255,255,.22)",
                   }}
                 />
               ))}
@@ -209,42 +219,44 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             <div
               style={{
                 position: "absolute" as const,
-                top: 10,
-                right: 10,
-                background: "#e8f5e9",        /* Light premium green background */
-                border: "1px solid #a5d6a7",  /* Soft green outline */
-                color: "#1b5e20",             /* High-contrast dark green text color */
+                /* 💡 CHANGE 1: Professional Dashboard Grid Inward Offset */
+                top: 24,
+                right: 24,
+                background: "#FFFFFF",
+                border: "1px solid #D6DEE8",
+                color: "#0F172A",
                 padding: "12px 16px",
                 borderRadius: "10px",
                 fontSize: "13px",
                 fontWeight: 600,
                 minWidth: "180px",
                 textAlign: "left" as const,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                boxShadow: "0 8px 24px rgba(15,23,42,.08)",
               }}
             >
               <div
                 style={{
-                  fontSize: "14px",
+                  /* 💡 CHANGE 2: Hero Engineering Metric Resolution Focus */
+                  fontSize: "18px",
                   fontWeight: 700,
-                  borderBottom: "1px solid rgba(46, 125, 50, 0.2)", /* Soft green divider line */
-                  paddingBottom: "4px",
-                  marginBottom: "6px",
-                  color: "#1b5e20"
+                  borderBottom: "1px solid rgba(46, 125, 50, 0.2)",
+                  paddingBottom: "8px",
+                  marginBottom: "10px",
+                  color: "#0F172A"
                 }}
               >
                 {(resolutionW ?? 0).toLocaleString()} × {(resolutionH ?? 0).toLocaleString()} px
               </div>
 
-              <div style={{ marginTop: "6px", color: "#2e7d32" }}>
+              <div style={{ marginTop: "6px", color: "#475569" }}>
                 Pixel Pitch: {pixelPitch} mm
               </div>
 
-              <div style={{ marginTop: "4px", color: "#2e7d32" }}>
+              <div style={{ marginTop: "4px", color: "#475569" }}>
                 Brightness: {brightness} nits
               </div>
 
-              <div style={{ marginTop: "4px", color: "#2e7d32" }}>
+              <div style={{ marginTop: "4px", color: "#475569" }}>
                 Viewing Distance: {viewingDistance} m
               </div>
             </div>
@@ -255,10 +267,11 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               alt="Human Scale"
               style={{
                 position: "absolute" as const,
-                right: -75,
-                bottom: marginBottom,
-                height: 140,
-                opacity: 0.45,
+                /* 💡 CHANGE 6: Grounded Floor Line Alignment */
+                right: -60,
+                bottom: marginBottom - 6,
+                height: 160,
+                opacity: 0.28,
                 pointerEvents: "none",
               }}
             />
@@ -274,7 +287,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 pointerEvents: "none",
               }}
             >
-              183 cm Reference
+              Human Scale Reference
             </div>
 
           </div>

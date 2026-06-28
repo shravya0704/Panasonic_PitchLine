@@ -8,6 +8,9 @@ export interface Product {
   applicationType: string;
 
   pitch: number;
+  maxPowerPerM2: number;
+
+  avgPowerPerM2: number;
 
   brightness: number;
 

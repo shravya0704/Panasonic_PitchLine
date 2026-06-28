@@ -12,4 +12,16 @@ export interface ConfigurationResult {
   resolutionH: number;
 
   totalArea: number;
+
+  maximumPower: number;
+
+  averagePower: number;
+
+  maximumHeat: number;
+
+  averageHeat: number;
+
+  maximumHeatBTU: number;
+
+  averageHeatBTU: number;
 }

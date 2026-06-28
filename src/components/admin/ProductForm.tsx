@@ -14,13 +14,15 @@ export default function ProductForm({
   onCancel,
 }: Props) {
 
-  const [form, setForm] = useState<Product>({
+  const [form, setForm] = useState<any>({
     id: product?.id ?? "",
     applicationType: product?.applicationType ?? "Indoor",
     seriesCode: product?.seriesCode ?? "",
     model: product?.model ?? "",
     pitch: product?.pitch ?? 0,
     brightness: product?.brightness ?? 0,
+    maxPowerPerM2: product?.maxPowerPerM2 ?? 0,
+    avgPowerPerM2: product?.avgPowerPerM2 ?? 0,
     cabinetWidth: product?.cabinetWidth ?? 0,
     cabinetHeight: product?.cabinetHeight ?? 0,
     cabinetResolutionW: product?.cabinetResolutionW ?? 0,
@@ -28,7 +30,7 @@ export default function ProductForm({
     modulesPerCabinet: product?.modulesPerCabinet ?? 0,
   });
 
-  const update = (field: keyof Product, value: any) => {
+  const update = (field: string, value: any) => {
     setForm({
       ...form,
       [field]: value,
@@ -53,6 +55,16 @@ export default function ProductForm({
 
     if (form.brightness <= 0) {
       alert("Brightness must be greater than zero.");
+      return;
+    }
+
+    if (form.maxPowerPerM2 <= 0) {
+      alert("Maximum Power must be greater than zero.");
+      return;
+    }
+
+    if (form.avgPowerPerM2 <= 0) {
+      alert("Average Power must be greater than zero.");
       return;
     }
 
@@ -141,6 +153,34 @@ export default function ProductForm({
             type="number"
             value={form.brightness || ""}
             onChange={(e) => update("brightness", parseInt(e.target.value) || 0)}
+          />
+        </Field>
+
+        <Field label="Maximum Power (W/m²)">
+          <input
+            type="number"
+            step="0.1"
+            value={form.maxPowerPerM2 || ""}
+            onChange={(e) =>
+              update(
+                "maxPowerPerM2",
+                parseFloat(e.target.value) || 0
+              )
+            }
+          />
+        </Field>
+
+        <Field label="Average Power (W/m²)">
+          <input
+            type="number"
+            step="0.1"
+            value={form.avgPowerPerM2 || ""}
+            onChange={(e) =>
+              update(
+                "avgPowerPerM2",
+                parseFloat(e.target.value) || 0
+              )
+            }
           />
         </Field>
 
