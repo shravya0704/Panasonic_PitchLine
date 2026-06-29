@@ -11,6 +11,8 @@ import { ConfigForm } from "../components/configurator/ConfigForm";
 import { ResultsPanel } from "../components/configurator/ResultsPanel";
 import { ScreenPreview } from "../components/configurator/ScreenPreview";
 import { ExportProposalModal } from "../components/configurator/ExportProposalModal";
+import ViewingDistanceVisualizer from "../components/configurator/ViewingDistanceVisualizer";
+
 
 import { Product } from "../types/Product";
 import { ConfigurationResult } from "../types/ConfigurationResult";
@@ -191,19 +193,30 @@ function ConfiguratorPage() {
                     </div>
                 </div>
 
-                {result && (
-                    <div className="export-section">
-                        <ResultsPanel
-                            result={result}
-                            selectedProduct={selectedProduct}
+                {result && selectedProduct && (
+                    <>
+                        <div className="export-section">
+                            <ResultsPanel
+                                result={result}
+                                selectedProduct={selectedProduct}
+                            />
+
+                            <button
+                                className="export-pdf-button"
+                                onClick={() => setShowExportModal(true)}
+                            >
+                                Export PDF
+                            </button>
+                        </div>
+
+                        <ViewingDistanceVisualizer
+                            pixelPitch={selectedProduct.pitch}
+                            actualWidth={result.actualWidth}
+                            actualHeight={result.actualHeight}
                         />
-                        <button
-                            className="export-pdf-button"
-                            onClick={() => setShowExportModal(true)}
-                        >
-                            Export PDF
-                        </button>
-                    </div>
+
+                       
+                    </>
                 )}
             </main>
 

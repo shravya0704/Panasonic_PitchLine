@@ -42,7 +42,7 @@ export const addPdfFooter = (
   );
 
   doc.text(
-    "Panasonic LED Configurator",
+    "Panasonic PitchLine",
     pageWidth / 2,
     pageHeight - 8,
     {

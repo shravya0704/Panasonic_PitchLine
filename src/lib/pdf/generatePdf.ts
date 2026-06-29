@@ -99,5 +99,7 @@ export const generatePdf = async (
   }
 
   // Save Document Binary
-  doc.save("Panasonic_LED_Configuration.pdf");
+  doc.save(
+    `PitchLine_${proposalId}.pdf`
+);
 };
