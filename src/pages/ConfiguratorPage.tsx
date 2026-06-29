@@ -100,16 +100,16 @@ function ConfiguratorPage() {
             const proposalId = generateProposalId();
 
             if (proposalData) {
-              await ProposalService.createProposal(
-                {
-                  ...proposalData,
-                  proposalId,
-                },
-                selectedProduct,
-                result,
-                width,
-                height
-              );
+                await ProposalService.createProposal(
+                    {
+                        ...proposalData,
+                        proposalId,
+                    },
+                    selectedProduct,
+                    result,
+                    width,
+                    height
+                );
             }
 
             await generatePdf(
@@ -144,8 +144,9 @@ function ConfiguratorPage() {
                         className="company-logo"
                     />
                     <div className="app-header-content">
-                        <h1>LED Display Configurator</h1>
-                        <p>Professional LED Wall Design & Proposal Generator</p>
+                        <h1>Panasonic PitchLine</h1>
+
+                        <p>LED Engineering Suite</p>
                     </div>
                 </div>
             </header>

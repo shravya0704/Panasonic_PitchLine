@@ -79,8 +79,9 @@ export const ConfigForm = ({
   return (
     <div className="config-form">
       <h2>Display Configuration</h2>
+
       <p className="config-subtitle">
-        Configure your Panasonic LED display
+        Configure your Panasonic LED display using the PitchLine engineering engine.
       </p>
 
       {/* SECTION 1: DISPLAY DROPDOWNS */}
@@ -144,31 +145,36 @@ export const ConfigForm = ({
         </div>
       </div>
 
-      {/* SECTION 2: SELECTED PRODUCT SUMMARY */}
-      <div className="config-section">
-        <div className="config-section-title">SELECTED PRODUCT</div>
-        {selectedProduct && (
-          <div className="selected-model-card">
-            <div className="selected-title">
-              Selected Product
-            </div>
-            <div className="selected-model">
-              {selectedProduct.model}
-            </div>
-            <div className="selected-spec">
-              Pixel Pitch
-              <span>{selectedProduct.pitch} mm</span>
-            </div>
-            <div className="selected-spec">
-              Brightness
-              <span>{selectedProduct.brightness} nits</span>
-            </div>
-          </div>
-        )}
+     {/* SECTION 2: SELECTED PRODUCT SUMMARY */}
+{selectedProduct && (
+  <div className="config-section">
+
+    <div className="config-section-title">
+      SELECTED PRODUCT
+    </div>
+
+    <div className="selected-model-card">
+
+      <div className="selected-model">
+        {selectedProduct.model}
       </div>
 
-      {/* SECTION 3: PREVIEW IMAGE UPLOAD */}
-      <div className="config-section">
+      <div className="selected-spec">
+        <span>Pixel Pitch</span>
+        <span>{selectedProduct.pitch} mm</span>
+      </div>
+
+      <div className="selected-spec">
+        <span>Brightness</span>
+        <span>{selectedProduct.brightness} nits</span>
+      </div>
+
+    </div>
+
+  </div>
+)}
+  {/* SECTION 3: PREVIEW IMAGE UPLOAD */ }
+  < div className = "config-section" >
         <div className="config-section-title">PREVIEW</div>
         <div className="form-group">
           <label className="section-label">PREVIEW IMAGE</label>
@@ -195,88 +201,90 @@ export const ConfigForm = ({
             <div className="upload-subtitle">PNG • JPG • JPEG</div>
           </label>
         </div>
-      </div>
+      </div >
 
-      {/* SECTION 4: DISPLAY DIMENSIONS CONTROLS */}
-      <div className="config-section">
-        <div className="config-section-title">DISPLAY SIZE</div>
-        
-        {/* Width Setting */}
-        <div className="form-group">
-          <label className="section-label">DISPLAY WIDTH</label>
-          {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
-          <div className="dimension-card">
-            <div className="dimension-control">
-              <button
-                type="button"
-                onClick={() => adjustWidth(width - 0.1)}
-              >
-                −
-              </button>
-              <div className="dimension-value">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.5"
-                  max="100"
-                  value={width}
-                  onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
-                  onBlur={() => adjustWidth(width)}
-                />
-                <span>m</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => adjustWidth(width + 0.1)}
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
+  {/* SECTION 4: DISPLAY DIMENSIONS CONTROLS */ }
+  < div className = "config-section" >
+    <div className="config-section-title">DISPLAY SIZE</div>
 
-        {/* Height Setting */}
-        <div className="form-group">
-          <label className="section-label">DISPLAY HEIGHT</label>
-          {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
-          <div className="dimension-card">
-            <div className="dimension-control">
-              <button
-                type="button"
-                onClick={() => adjustHeight(height - 0.1)}
-              >
-                −
-              </button>
-              <div className="dimension-value">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.5"
-                  max="30"
-                  value={height}
-                  onChange={(e) => setHeight(parseFloat(e.target.value) || 0)}
-                  onBlur={() => adjustHeight(height)}
-                />
-                <span>m</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => adjustHeight(height + 0.1)}
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+{/* Width Setting */ }
+<div className="form-group">
+  <label className="section-label">DISPLAY WIDTH</label>
+  {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
+  <div className="dimension-card">
+    <div className="dimension-control">
       <button
-        className="calculate-button"
-        onClick={onCalculate}
-        disabled={!selectedProduct || width < 0.5 || height < 0.5}
+        type="button"
+        onClick={() => adjustWidth(width - 0.1)}
       >
-        Generate Configuration
+        −
+      </button>
+      <div className="dimension-value">
+        <input
+          type="number"
+          step="0.01"
+          min="0.5"
+          max="100"
+          /* Fix: Prevents the browser from appending leading zeros by rendering empty text when state is 0 */
+          value={width === 0 ? "" : width}
+          onChange={(e) => setWidth(parseFloat(e.target.value) || 0)}
+          onBlur={() => adjustWidth(width)}
+        />
+        <span>m</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => adjustWidth(width + 0.1)}
+      >
+        +
       </button>
     </div>
+  </div>
+</div>
+
+{/* Height Setting */ }
+<div className="form-group">
+  <label className="section-label">DISPLAY HEIGHT</label>
+  {/* 💡 CHANGED: Wrapped in cleaner dimension-card layout */}
+  <div className="dimension-card">
+    <div className="dimension-control">
+      <button
+        type="button"
+        onClick={() => adjustHeight(height - 0.1)}
+      >
+        −
+      </button>
+      <div className="dimension-value">
+        <input
+          type="number"
+          step="0.01"
+          min="0.5"
+          max="30"
+          /* Fix: Prevents the browser from appending leading zeros by rendering empty text when state is 0 */
+          value={height === 0 ? "" : height}
+          onChange={(e) => setHeight(parseFloat(e.target.value) || 0)}
+          onBlur={() => adjustHeight(height)}
+        />
+        <span>m</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => adjustHeight(height + 0.1)}
+      >
+        +
+      </button>
+    </div>
+  </div>
+</div>
+      </div >
+
+  <button
+    className="calculate-button"
+    onClick={onCalculate}
+    disabled={!selectedProduct || width < 0.5 || height < 0.5}
+  >
+    Generate Configuration
+  </button>
+    </div >
   );
 };

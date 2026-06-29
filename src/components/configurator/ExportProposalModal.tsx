@@ -2,7 +2,6 @@ import { useState } from "react";
 
 interface ExportProposalModalProps {
   onClose: () => void;
-
   onSubmit: (
     data: {
       projectName: string;
@@ -17,29 +16,15 @@ export const ExportProposalModal = ({
   onClose,
   onSubmit,
 }: ExportProposalModalProps) => {
-
-  const [projectName, setProjectName] =
-    useState("");
-
-  const [customerName, setCustomerName] =
-    useState("");
-
-  const [companyName, setCompanyName] =
-    useState("");
-
-  const [email, setEmail] =
-    useState("");
+  const [projectName, setProjectName] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [email, setEmail] = useState("");
 
   const handleSubmit = () => {
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (
-      !projectName ||
-      !customerName ||
-      !companyName ||
-      !email
-    ) {
+    if (!projectName || !customerName || !companyName || !email) {
       alert("All fields are mandatory.");
       return;
     }
@@ -60,62 +45,52 @@ export const ExportProposalModal = ({
   return (
     <div className="modal-overlay">
       <div className="modal-card">
+        {/* Step 1: Subtitle added seamlessly below heading */}
         <h2>Proposal Information</h2>
+        <p className="modal-subtitle">
+          Complete the project details below to generate a Panasonic PitchLine proposal.
+        </p>
 
         <div className="form-group">
-          <label>Project Name *</label>
+          <label>Enter Project Name *</label>
           <input
             value={projectName}
-            onChange={(e) =>
-              setProjectName(e.target.value)
-            }
+            onChange={(e) => setProjectName(e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label>Customer Name *</label>
+          <label>Enter Customer Name *</label>
           <input
             value={customerName}
-            onChange={(e) =>
-              setCustomerName(e.target.value)
-            }
+            onChange={(e) => setCustomerName(e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label>Company Name *</label>
+          <label>Enter Company Name *</label>
           <input
             value={companyName}
-            onChange={(e) =>
-              setCompanyName(e.target.value)
-            }
+            onChange={(e) => setCompanyName(e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label>Email *</label>
+          <label>Enter Email *</label>
           <input
             type="email"
             value={email}
-            onChange={(e) =>
-              setEmail(e.target.value)
-            }
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            marginTop: "20px",
-          }}
-        >
-          <button onClick={onClose}>
+        {/* Step 2 & 3: Inline styles replaced with modal-actions class & clean semantic secondary/primary buttons */}
+        <div className="modal-actions">
+          <button className="secondary-button" onClick={onClose}>
             Cancel
           </button>
-
-          <button onClick={handleSubmit}>
-            Generate Proposal
+          <button className="primary-button" onClick={handleSubmit}>
+            Export Proposal
           </button>
         </div>
       </div>
