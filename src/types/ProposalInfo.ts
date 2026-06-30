@@ -8,4 +8,8 @@ export interface ProposalInfo {
   companyName: string;
 
   email: string;
+
+  phoneNumber?: string;
+
+  location?: string;
 }

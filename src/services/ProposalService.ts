@@ -24,9 +24,15 @@ export const ProposalService = {
 
       email: proposalData.email,
 
+      // NEW
+      phone_number: proposalData.phoneNumber || null,
+
+      // NEW
+      location: proposalData.location || null,
+
       product_model: product.model,
 
-      // ✅ Matches your Supabase schema
+      // Matches your Supabase schema
       series_code: product.seriesCode,
 
       application_type: product.applicationType,

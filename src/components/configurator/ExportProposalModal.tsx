@@ -8,6 +8,8 @@ interface ExportProposalModalProps {
       customerName: string;
       companyName: string;
       email: string;
+      phoneNumber?: string;
+      location?: string;
     }
   ) => void;
 }
@@ -21,8 +23,12 @@ export const ExportProposalModal = ({
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
 
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [location, setLocation] = useState("");
+
   const handleSubmit = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\d{10}$/;
 
     if (!projectName || !customerName || !companyName || !email) {
       alert("All fields are mandatory.");
@@ -34,21 +40,30 @@ export const ExportProposalModal = ({
       return;
     }
 
+    // Optional phone validation
+    if (phoneNumber.trim() !== "" && !phoneRegex.test(phoneNumber.trim())) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     onSubmit({
       projectName,
       customerName,
       companyName,
       email,
+      phoneNumber: phoneNumber.trim() || undefined,
+      location: location.trim() || undefined,
     });
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal-card">
-        {/* Step 1: Subtitle added seamlessly below heading */}
         <h2>Proposal Information</h2>
+
         <p className="modal-subtitle">
-          Complete the project details below to generate a Panasonic PitchLine proposal.
+          Complete the project details below to generate a Panasonic PitchLine
+          proposal.
         </p>
 
         <div className="form-group">
@@ -84,11 +99,31 @@ export const ExportProposalModal = ({
           />
         </div>
 
-        {/* Step 2 & 3: Inline styles replaced with modal-actions class & clean semantic secondary/primary buttons */}
+        <div className="form-group">
+          <label>Phone Number (Optional)</label>
+          <input
+            type="text"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="10-digit phone number"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Location (Optional)</label>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Enter location"
+          />
+        </div>
+
         <div className="modal-actions">
           <button className="secondary-button" onClick={onClose}>
             Cancel
           </button>
+
           <button className="primary-button" onClick={handleSubmit}>
             Export Proposal
           </button>
