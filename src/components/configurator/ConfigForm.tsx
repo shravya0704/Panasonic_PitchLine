@@ -48,13 +48,22 @@ export const ConfigForm = ({
   );
 
   const modelsList = useMemo(
-    () =>
-      products.filter(
+  () =>
+    [...products]
+      .filter(
         (p) =>
-          p.applicationType === applicationType && p.seriesCode === seriesCode
-      ),
-    [products, applicationType, seriesCode]
-  );
+          p.applicationType === applicationType &&
+          p.seriesCode === seriesCode
+      )
+      .sort((a, b) => {
+        if (a.pitch !== b.pitch) {
+          return a.pitch - b.pitch;
+        }
+
+        return a.model.localeCompare(b.model);
+      }),
+  [products, applicationType, seriesCode]
+);
 
   useEffect(() => {
     setSeriesCode("");

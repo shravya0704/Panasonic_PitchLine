@@ -1,5 +1,8 @@
 import React from "react";
 
+// Resolved path for the existing human asset used in ScreenPreview
+const human = new URL("../../assets/human.png", import.meta.url).href;
+
 interface ViewingDistanceVisualizerProps {
     pixelPitch: number;
     actualWidth: number;
@@ -11,312 +14,282 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
     actualWidth,
     actualHeight,
 }) => {
+    // Structural calculations based on engineering requirements
     const optimalDistance = pixelPitch * 1.5;
-    const comfortableDistance = pixelPitch * 3;
     const maximumDistance = pixelPitch * 6;
+
+    // Normalize height fallback values safely
+    const displayHeightValue = actualHeight || 14.85;
 
     const cardStyle: React.CSSProperties = {
         background: "#ffffff",
         borderRadius: 14,
-        padding: 18, 
+        padding: 24, 
         marginTop: 24,
-        boxShadow: "0 6px 18px rgba(0,0,0,0.08)",
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
         border: "1px solid #e5e7eb",
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
     };
 
     return (
         <div style={cardStyle}>
-            <div
-                style={{
-                    marginBottom: 20,
-                }}
-            >
-                <h2
-                    style={{
-                        margin: 0,
-                        color: "#003B7A",
-                    }}
-                >
+            <div style={{ marginBottom: 24 }}>
+                <h2 style={{ margin: 0, color: "#003B7A", fontSize: 22, fontWeight: 700 }}>
                     Viewing Distance Analysis
                 </h2>
-
-                <p
-                    style={{
-                        marginTop: 8,
-                        color: "#666",
-                        marginBottom: 0,
-                    }}
-                >
-                    Recommended viewing distance based on pixel pitch.
+                {/* 1. Subtitle */}
+                <p style={{ marginTop: 6, color: "#64748B", fontSize: 14, marginBottom: 0 }}>
+                    Recommended viewing distances based on the selected pixel pitch.
                 </p>
             </div>
 
             <svg
                 width="100%"
-                viewBox="0 0 900 210"
+                viewBox="0 0 1000 360"
                 style={{
                     borderRadius: 12,
-                    background: "#fbfcfe",
-                    border: "1px solid #edf2f7",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
                 }}
             >
                 <defs>
+                    {/* Professional Blueprint CAD Grid */}
                     <pattern
-                        id="grid"
-                        width="25"
-                        height="25"
+                        id="engineering-grid"
+                        width="20"
+                        height="20"
                         patternUnits="userSpaceOnUse"
                     >
                         <path
-                            d="M25 0 L0 0 0 25"
+                            d="M 20 0 L 0 0 0 20"
                             fill="none"
-                            stroke="#eef3f8"
-                            strokeWidth="1"
+                            stroke="#f1f5f9"
+                            strokeWidth="1.2"
                         />
                     </pattern>
 
+                    {/* Standardized CAD Arrowheads with matching colors */}
                     <marker
-                        id="arrow"
-                        markerWidth="8"
-                        markerHeight="8"
+                        id="cad-arrow-right"
+                        markerWidth="7"
+                        markerHeight="7"
                         refX="6"
-                        refY="3"
+                        refY="3.5"
                         orient="auto"
                     >
-                        <path
-                            d="M0,0 L6,3 L0,6"
-                            fill="#005BAC"
-                        />
+                        <path d="M0,1.5 L6,3.5 L0,5.5 Z" fill="#334155" />
+                    </marker>
+
+                    <marker
+                        id="cad-arrow-left"
+                        markerWidth="7"
+                        markerHeight="7"
+                        refX="0"
+                        refY="3.5"
+                        orient="auto"
+                    >
+                        <path d="M6,1.5 L0,3.5 L6,5.5 Z" fill="#334155" />
+                    </marker>
+
+                    <marker
+                        id="arrow-green-right"
+                        markerWidth="7"
+                        markerHeight="7"
+                        refX="6"
+                        refY="3.5"
+                        orient="auto"
+                    >
+                        <path d="M0,1.5 L6,3.5 L0,5.5 Z" fill="#16a34a" />
+                    </marker>
+
+                    <marker
+                        id="arrow-green-left"
+                        markerWidth="7"
+                        markerHeight="7"
+                        refX="0"
+                        refY="3.5"
+                        orient="auto"
+                    >
+                        <path d="M6,1.5 L0,3.5 L6,5.5 Z" fill="#16a34a" />
+                    </marker>
+
+                    <marker
+                        id="arrow-blue-right"
+                        markerWidth="7"
+                        markerHeight="7"
+                        refX="6"
+                        refY="3.5"
+                        orient="auto"
+                    >
+                        <path d="M0,1.5 L6,3.5 L0,5.5 Z" fill="#2563eb" />
+                    </marker>
+
+                    <marker
+                        id="arrow-blue-left"
+                        markerWidth="7"
+                        markerHeight="7"
+                        refX="0"
+                        refY="3.5"
+                        orient="auto"
+                    >
+                        <path d="M6,1.5 L0,3.5 L6,5.5 Z" fill="#2563eb" />
                     </marker>
                 </defs>
 
-                <rect
-                    width="900"
-                    height="210"
-                    fill="url(#grid)"
-                />
+                {/* Grid Overlay Layer */}
+                <rect width="1000" height="360" fill="url(#engineering-grid)" />
 
-                {/* Wall */}
-                <rect
-                    x="70"
-                    y="40"
-                    width="16"
-                    height="135"
-                    rx="3"
-                    fill="#5f6368"
-                />
+                {/* Base Ground Plane Alignment line */}
+                <line x1="40" y1="290" x2="960" y2="290" stroke="#0f172a" strokeWidth="1.5" />
 
-                <text
-                    x="78"
-                    y="32"
-                    textAnchor="middle"
-                    fontSize="14"
-                    fill="#333"
-                >
-                    Wall
+                {/* STRUCTURE: Physical Architectural Wall Segment */}
+                <rect x="135" y="50" width="16" height="240" rx="1" fill="#94a3b8" />
+                <text x="143" y="40" textAnchor="middle" fontSize="12" fontWeight="700" fill="#475569" letterSpacing="0.5">
+                    WALL
                 </text>
 
-                {/* LED */}
-                <rect
-                    x="92"
-                    y="60"
-                    width="20"
-                    height="96"
-                    rx="2"
-                    fill="#005BAC"
-                />
-
+                {/* HARDWARE: Display Chassis Layer */}
+                <rect x="151" y="90" width="22" height="150" rx="3" fill="#1d4ed8" stroke="#1e40af" strokeWidth="1.5" />
                 <text
-                    x="120"
-                    y="53"
-                    fontSize="14"
-                    fill="#005BAC"
-                    fontWeight="600"
+                    x="164"
+                    y="165"
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="#ffffff"
+                    fontWeight="700"
+                    transform="rotate(-90 164 165)"
+                    letterSpacing="0.5"
                 >
                     Panasonic LED
                 </text>
 
-                {/* Viewing line */}
-                <line
-                    x1="112"
-                    y1="108"
-                    x2="720"
-                    y2="108"
-                    stroke="#005BAC"
-                    strokeWidth="2.5"
-                    strokeDasharray="10 7"
-                    markerEnd="url(#arrow)"
-                />
+                {/* CAD METRIC: Dynamic Screen Height Dimensioning */}
+                <line x1="80" y1="90" x2="80" y2="240" stroke="#475569" strokeWidth="1" markerStart="url(#cad-arrow-left)" markerEnd="url(#cad-arrow-right)" />
+                <line x1="70" y1="90" x2="151" y2="90" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                <line x1="70" y1="240" x2="151" y2="240" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                
+                {/* Height Label Block */}
+                <rect x="45" y="153" width="65" height="24" rx="6" fill="#334155" />
+                <text x="77" y="169" textAnchor="middle" fontSize="11" fill="#ffffff" fontWeight="600">
+                    {displayHeightValue.toFixed(2)} m
+                </text>
 
-                {/* Distance badge */}
-                <rect
-                    x="340"
-                    y="88"
-                    width="160"
-                    height="40"
-                    rx="20"
-                    fill="#ffffff"
-                    stroke="#d6e4ff"
-                />
-
-                <text
-                    x="420"
-                    y="113"
-                    textAnchor="middle"
-                    fontSize="16"
-                    fill="#005BAC"
-                    fontWeight="700"
-                >
+                {/* 3. Green Badge Above Arrow Line */}
+                <rect x="260" y="53" width="68" height="24" rx="12" fill="#16a34a" />
+                <text x="294" y="69" textAnchor="middle" fontSize="11" fill="#ffffff" fontWeight="700">
                     {optimalDistance.toFixed(2)} m
                 </text>
 
-                {/* Viewer (Shifted down dynamically per criteria) */}
-                <circle
-                    cx="760"
-                    cy="95"
-                    r="13"
-                    fill="none"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
+                {/* 2. OPTIMAL VIEWING DISTANCE ARROW AND TEXT */}
                 <line
-                    x1="760"
-                    y1="108"
-                    x2="760"
-                    y2="158"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
-                <line
-                    x1="760"
-                    y1="121"
-                    x2="740"
-                    y2="135"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
-                <line
-                    x1="760"
-                    y1="121"
-                    x2="780"
-                    y2="135"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
-                <line
-                    x1="760"
-                    y1="158"
-                    x2="744"
-                    y2="187"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
-                <line
-                    x1="760"
-                    y1="158"
-                    x2="776"
-                    y2="187"
-                    stroke="#333"
-                    strokeWidth="2"
-                />
-
-                <text
-                    x="760"
-                    y="210"
-                    textAnchor="middle"
-                    fill="#555"
-                    fontSize="14"
-                >
-                    Viewer
-                </text>
-
-                {/* Engineering dimension */}
-                <line
-                    x1="112"
-                    y1="180"
-                    x2="720"
-                    y2="180"
-                    stroke="#999"
+                    x1="173"
+                    y1="95"
+                    x2="415"
+                    y2="95"
+                    stroke="#16a34a"
                     strokeWidth="1.5"
-                    markerStart="url(#arrow)"
-                    markerEnd="url(#arrow)"
+                    markerStart="url(#arrow-green-left)"
+                    markerEnd="url(#arrow-green-right)"
                 />
-
-                <line
-                    x1="112"
-                    y1="168"
-                    x2="112"
-                    y2="192"
-                    stroke="#999"
-                />
-
-                <line
-                    x1="720"
-                    y1="168"
-                    x2="720"
-                    y2="192"
-                    stroke="#999"
-                />
+                <line x1="415" y1="85" x2="415" y2="105" stroke="#16a34a" strokeWidth="1" strokeDasharray="2 2" />
 
                 <text
-                    x="416"
-                    y="173"
+                    x="294"
+                    y="118"
                     textAnchor="middle"
-                    fill="#666"
-                    fontSize="13"
+                    fontSize="12"
+                    fill="#1e293b"
+                    fontWeight="600"
                 >
                     Optimal Viewing Distance
                 </text>
+
+                {/* 4. MAXIMUM VIEWING DISTANCE ARROW, BADGE, AND TEXT */}
+                <line
+                    x1="173"
+                    y1="215"
+                    x2="735"
+                    y2="215"
+                    stroke="#2563eb"
+                    strokeWidth="1.5"
+                    markerStart="url(#arrow-blue-left)"
+                    markerEnd="url(#arrow-blue-right)"
+                />
+                <line x1="735" y1="205" x2="735" y2="225" stroke="#2563eb" strokeWidth="1" strokeDasharray="2 2" />
+                
+                <rect x="440" y="228" width="68" height="24" rx="12" fill="#2563eb" />
+                <text x="474" y="244" textAnchor="middle" fontSize="11" fill="#ffffff" fontWeight="700">
+                    {maximumDistance.toFixed(2)} m
+                </text>
+                
+                <text
+                    x="474"
+                    y="198"
+                    textAnchor="middle"
+                    fontSize="12"
+                    fill="#1e293b"
+                    fontWeight="600"
+                >
+                    Maximum Viewing Distance
+                </text>
+
+                {/* HUMAN OPERATOR Y-AXIS SCALE METRIC */}
+                <line x1="875" y1="130" x2="875" y2="290" stroke="#475569" strokeWidth="1" markerStart="url(#cad-arrow-left)" markerEnd="url(#cad-arrow-right)" />
+                <line x1="800" y1="130" x2="885" y2="130" stroke="#cbd5e1" strokeWidth="1" strokeDasharray="2 2" />
+                
+                <rect x="893" y="193" width="60" height="24" rx="12" fill="#475569" />
+                <text x="923" y="209" textAnchor="middle" fontSize="11" fill="#ffffff" fontWeight="600">
+                    183 cm
+                </text>
+
+                {/* OPERATOR SILHOUETTE */}
+                <g transform="translate(775, 130)">
+                    <rect x="0" y="0" width="70" height="160" fill="#f8fafc" opacity="0.9" />
+                    <image
+                        href={human}
+                        x="0"
+                        y="0"
+                        width="70"
+                        height="160"
+                        opacity="0.85"
+                        preserveAspectRatio="xMidYMid meet"
+                    />
+                </g>
+
+                {/* Ground Reference Anchors */}
+                <text x="810" y="308" textAnchor="middle" fontSize="12" fontWeight="700" fill="#1e293b" letterSpacing="0.5">
+                    VIEWER
+                </text>
             </svg>
 
-            {/* Audience Viewing Zones */}
+            {/* 5. Simplified Lower Card Panel */}
             <div
                 style={{
                     marginTop: 24,
-                    border: "1px solid #E5E7EB",
+                    border: "1px solid #e2e8f0",
                     borderRadius: 12,
                     padding: 20,
-                    background: "#FCFDFE",
+                    background: "#ffffff",
                 }}
             >
-                <h3
-                    style={{
-                        margin: "0 0 18px",
-                        color: "#003B7A",
-                        fontSize: 18,
-                    }}
-                >
-                    Audience Viewing Zones
+                <h3 style={{ margin: "0 0 16px", color: "#003B7A", fontSize: 16, fontWeight: 700 }}>
+                    Viewing Distance Guide
                 </h3>
 
                 {[
                     {
-                        color: "#16A34A",
-                        title: "Excellent Viewing",
+                        color: "#16a34a",
+                        title: "Optimal Viewing Distance",
                         value: optimalDistance,
-                        description:
-                            "Ideal for fine text, spreadsheets, control rooms and detailed presentations.",
+                        description: "Ideal for close viewing of detailed content.",
                     },
                     {
-                        color: "#F59E0B",
-                        title: "Comfortable Viewing",
-                        value: comfortableDistance,
-                        description:
-                            "Recommended for conference rooms, classrooms and auditoriums.",
-                    },
-                    {
-                        color: "#2563EB",
-                        title: "Maximum Readability",
+                        color: "#2563eb",
+                        title: "Maximum Viewing Distance",
                         value: maximumDistance,
-                        description:
-                            "Suitable for large venues where viewers are seated farther away.",
+                        description: "Suitable for large venues and long-distance viewing.",
                     },
-                ].map((zone) => (
+                ].map((zone, idx, arr) => (
                     <div
                         key={zone.title}
                         style={{
@@ -324,19 +297,16 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                             alignItems: "flex-start",
                             gap: 16,
                             padding: "14px 0",
-                            borderBottom:
-                                zone.title === "Maximum Readability"
-                                    ? "none"
-                                    : "1px solid #EDF2F7",
+                            borderBottom: idx === arr.length - 1 ? "none" : "1px solid #f1f5f9",
                         }}
                     >
                         <div
                             style={{
-                                width: 14,
-                                height: 14,
+                                width: 12,
+                                height: 12,
                                 borderRadius: "50%",
                                 background: zone.color,
-                                marginTop: 6,
+                                marginTop: 5,
                                 flexShrink: 0,
                             }}
                         />
@@ -350,55 +320,19 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                                     marginBottom: 4,
                                 }}
                             >
-                                <span
-                                    style={{
-                                        fontWeight: 700,
-                                        color: "#003B7A",
-                                        fontSize: 16,
-                                    }}
-                                >
+                                <span style={{ fontWeight: 600, color: "#1e293b", fontSize: 14 }}>
                                     {zone.title}
                                 </span>
-
-                                <span
-                                    style={{
-                                        fontWeight: 700,
-                                        color: zone.color,
-                                        fontSize: 18,
-                                    }}
-                                >
+                                <span style={{ fontWeight: 700, color: zone.color, fontSize: 16 }}>
                                     {zone.value.toFixed(2)} m
                                 </span>
                             </div>
-
-                            <div
-                                style={{
-                                    color: "#64748B",
-                                    fontSize: 14,
-                                    lineHeight: 1.5,
-                                }}
-                            >
+                            <div style={{ color: "#64748b", fontSize: 13, lineHeight: 1.5 }}>
                                 {zone.description}
                             </div>
                         </div>
                     </div>
                 ))}
-
-                <div
-                    style={{
-                        marginTop: 18,
-                        paddingTop: 16,
-                        borderTop: "1px dashed #CBD5E1",
-                        color: "#64748B",
-                        fontSize: 13,
-                        lineHeight: 1.6,
-                    }}
-                >
-                    <strong>Note:</strong> Viewing distances are engineering recommendations
-                    based on the selected pixel pitch and should be used as planning guidance.
-                    Actual viewing comfort may vary depending on content type, ambient lighting,
-                    and installation environment.
-                </div>
             </div>
         </div>
     );

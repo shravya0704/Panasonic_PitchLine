@@ -54,12 +54,15 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const screenHeightPx = safeHeight * scale;
 
     const marginLeft = 80;
-    const marginRight = 120;
+    
+    // 3. Increased right margin to provide dedicated workspace for metadata panel
+    const marginRight = 210;
+    
     const marginTop = 70;
     const marginBottom = 80;
 
-    // Fixed: Swapped to commercial round matching sales engineer presentation metrics
-    const viewingDistance = pixelPitch ? Math.round(pixelPitch * 1.5) : "-";
+    // 2. Standardized to unified .toFixed(2) precision across components
+    const viewingDistance = pixelPitch !== undefined ? (pixelPitch * 1.5).toFixed(2) : "-";
 
     return (
       <div
@@ -110,7 +113,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             display: "flex",
             justifyContent: "center",
             alignItems: "flex-end",
-            gap: "40px",
+            gap: "20px",
           }}
         >
           <div
@@ -121,7 +124,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               background: "#F8FAFC",
             }}
           >
-            {/* 💡 CHANGE 5: Top Engineering Annotation Label */}
+            {/* Top Engineering Annotation Label */}
             <div
               className="dimension-label top"
               style={{
@@ -142,7 +145,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               {displayWidthText} m
             </div>
 
-            {/* 💡 CHANGE 5: Side Engineering Annotation Label */}
+            {/* Side Engineering Annotation Label */}
             <div
               className="dimension-label side"
               style={{
@@ -171,11 +174,10 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 left: marginLeft,
                 width: screenWidthPx,
                 height: screenHeightPx,
-                /* 💡 CHANGE 3: Technical Cad Drawing Border & Drop Shadow */
                 border: "1px solid #CBD5E1",
                 boxShadow: "0 12px 32px rgba(15,23,42,.12)",
                 overflow: "hidden",
-                backgroundImage: `url(${uploadedImage || screenImage})`, // Dynamically swaps templates inline
+                backgroundImage: `url(${uploadedImage || screenImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -191,7 +193,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     left: `${((i + 1) * 100) / (cabinetsW || 1)}%`,
                     top: 0,
                     bottom: 0,
-                    /* 💡 CHANGE 4: Dashed Structural Blueprint Metric */
                     borderLeft: "1px dashed rgba(255,255,255,.22)",
                   }}
                 />
@@ -208,7 +209,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     top: `${((i + 1) * 100) / (cabinetsH || 1)}%`,
                     left: 0,
                     right: 0,
-                    /* 💡 CHANGE 4: Dashed Structural Blueprint Metric */
                     borderTop: "1px dashed rgba(255,255,255,.22)",
                   }}
                 />
@@ -216,73 +216,95 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             </div>
 
             {/* Premium Panasonic Info Card Badge Overlay */}
+            {/* 3. Shifted card right to sit inside new canvas workspace with a uniform polish width */}
             <div
               style={{
                 position: "absolute" as const,
-                /* 💡 CHANGE 1: Professional Dashboard Grid Inward Offset */
-                top: 24,
-                right: 24,
+                top: 28,
+                right: 12,
                 background: "#FFFFFF",
                 border: "1px solid #D6DEE8",
+                borderRadius: 12,
+                padding: "10px 14px",
+                width: 165,
+                boxShadow: "0 6px 18px rgba(15,23,42,.08)",
                 color: "#0F172A",
-                padding: "12px 16px",
-                borderRadius: "10px",
-                fontSize: "13px",
-                fontWeight: 600,
-                minWidth: "180px",
-                textAlign: "left" as const,
-                boxShadow: "0 8px 24px rgba(15,23,42,.08)",
+                zIndex: 2,
               }}
             >
               <div
                 style={{
-                  /* 💡 CHANGE 2: Hero Engineering Metric Resolution Focus */
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: 700,
                   borderBottom: "1px solid rgba(46, 125, 50, 0.2)",
-                  paddingBottom: "8px",
-                  marginBottom: "10px",
+                  paddingBottom: "6px",
+                  marginBottom: "8px",
                   color: "#0F172A"
                 }}
               >
-                {(resolutionW ?? 0).toLocaleString()} × {(resolutionH ?? 0).toLocaleString()} px
+                {resolutionW ?? 0} × {resolutionH ?? 0} px
               </div>
 
-              <div style={{ marginTop: "6px", color: "#475569" }}>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#475569",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
                 Pixel Pitch: {pixelPitch} mm
               </div>
 
-              <div style={{ marginTop: "4px", color: "#475569" }}>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#475569",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
                 Brightness: {brightness} nits
               </div>
 
-              <div style={{ marginTop: "4px", color: "#475569" }}>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#475569",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                }}
+              >
                 Viewing Distance: {viewingDistance} m
               </div>
             </div>
 
             {/* Silhouette Scale Anchor Reference */}
+            {/* 1 & 3. Locked alignment to screen baseline (marginBottom) and balanced right axis position */}
             <img
               src={human}
               alt="Human Scale"
               style={{
                 position: "absolute" as const,
-                /* 💡 CHANGE 6: Grounded Floor Line Alignment */
-                right: -60,
-                bottom: marginBottom - 6,
-                height: 160,
-                opacity: 0.28,
+                right: 55,
+                bottom: marginBottom,
+                height: Math.min(screenHeightPx * 0.42, 125),
+                opacity: 0.35,
                 pointerEvents: "none",
               }}
             />
 
+            {/* Clean Centered Engineering Text Label */}
+            {/* 1. Aligned caption relative to the absolute baseline variable offset */}
             <div
               style={{
                 position: "absolute" as const,
-                right: -85,
-                bottom: marginBottom - 20,
-                fontSize: "12px",
-                color: "#64748b",
+                right: 10,
+                bottom: marginBottom - 34,
+                width: 120,
+                textAlign: "center" as const,
+                fontSize: 12,
+                color: "#64748B",
                 fontWeight: 600,
                 pointerEvents: "none",
               }}

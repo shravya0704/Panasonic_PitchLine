@@ -75,25 +75,28 @@ export const ResultsPanel = ({
             <div className="premium-metric-card">
               <span className="metric-label">Maximum Power</span>
               <span className="metric-value">
-                {result.maximumPower.toLocaleString(undefined, { maximumFractionDigits: 0 })} W
+                {Math.round(result.maximumPower)} W
               </span>
             </div>
+
             <div className="premium-metric-card">
               <span className="metric-label">Average Power</span>
               <span className="metric-value">
-                {result.averagePower.toLocaleString(undefined, { maximumFractionDigits: 0 })} W
+                {Math.round(result.averagePower)} W
               </span>
             </div>
+
             <div className="premium-metric-card">
               <span className="metric-label">Max Heat Dissipation</span>
               <span className="metric-value">
-                {maxHeatBTU.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>BTU/h</small>
+                {Math.round(maxHeatBTU)} <small>BTU/h</small>
               </span>
             </div>
+
             <div className="premium-metric-card">
               <span className="metric-label">Avg Heat Dissipation</span>
               <span className="metric-value">
-                {avgHeatBTU.toLocaleString(undefined, { maximumFractionDigits: 0 })} <small>BTU/h</small>
+                {Math.round(avgHeatBTU)} <small>BTU/h</small>
               </span>
             </div>
           </div>
