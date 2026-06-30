@@ -101,7 +101,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ## Project Status
 
-Built during a summer internship with Panasonic's Display Solutions Group, under the guidance of Shantanu Rastogi (Senior PM). Core configuration engine, screen preview, PDF export, and admin dashboard are complete. Advanced visual features (viewing distance visualization, spatial layout tools) are in active development.
+Built during a summer internship with Panasonic's Display Solutions Group, in a short period of 3 weeks.This will be usefu Core configuration engine, screen preview, PDF export, and admin dashboard are complete. Advanced visual features (viewing distance visualization, spatial layout tools) are in active development.
 
 ---
 
