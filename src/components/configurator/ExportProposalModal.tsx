@@ -57,8 +57,24 @@ export const ExportProposalModal = ({
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-card">
+    <div 
+      className="modal-overlay" 
+      onClick={onClose}
+      style={{
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <div 
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "min(92vw, 700px)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxSizing: "border-box",
+          padding: "clamp(20px, 3vw, 32px)",
+        }}
+      >
         <h2>Proposal Information</h2>
 
         <p className="modal-subtitle">
@@ -71,6 +87,10 @@ export const ExportProposalModal = ({
           <input
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 
@@ -79,6 +99,10 @@ export const ExportProposalModal = ({
           <input
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 
@@ -87,6 +111,10 @@ export const ExportProposalModal = ({
           <input
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 
@@ -96,6 +124,10 @@ export const ExportProposalModal = ({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 
@@ -106,6 +138,10 @@ export const ExportProposalModal = ({
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
             placeholder="10-digit phone number"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 
@@ -116,6 +152,10 @@ export const ExportProposalModal = ({
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             placeholder="Enter location"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+            }}
           />
         </div>
 

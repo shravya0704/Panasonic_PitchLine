@@ -37,7 +37,6 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                 <h2 style={{ margin: 0, color: "#003B7A", fontSize: 22, fontWeight: 700 }}>
                     Viewing Distance Analysis
                 </h2>
-                {/* 1. Subtitle */}
                 <p style={{ marginTop: 6, color: "#64748B", fontSize: 14, marginBottom: 0 }}>
                     Recommended viewing distances based on the selected pixel pitch.
                 </p>
@@ -143,21 +142,24 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                 <line x1="40" y1="290" x2="960" y2="290" stroke="#0f172a" strokeWidth="1.5" />
 
                 {/* STRUCTURE: Physical Architectural Wall Segment */}
-                <rect x="135" y="50" width="16" height="240" rx="1" fill="#94a3b8" />
-                <text x="143" y="40" textAnchor="middle" fontSize="12" fontWeight="700" fill="#475569" letterSpacing="0.5">
+                <rect x="125" y="50" width="26" height="240" rx="1" fill="#94a3b8" />
+                <text x="138" y="40" textAnchor="middle" fontSize="12" fontWeight="700" fill="#475569" letterSpacing="0.5">
                     WALL
                 </text>
 
-                {/* HARDWARE: Display Chassis Layer */}
-                <rect x="151" y="90" width="22" height="150" rx="3" fill="#1d4ed8" stroke="#1e40af" strokeWidth="1.5" />
+                {/* HARDWARE: Display Chassis Layer (Width: 12, X: 151 means center is at 157) */}
+                <rect x="151" y="90" width="12" height="150" rx="2" fill="#1d4ed8" stroke="#1e40af" strokeWidth="1" />
+                
+                {/* Re-centered text inside the slim screen panel */}
                 <text
-                    x="164"
+                    x="157"
                     y="165"
                     textAnchor="middle"
-                    fontSize="11"
+                    dominantBaseline="middle"
+                    fontSize="9.5"
                     fill="#ffffff"
                     fontWeight="700"
-                    transform="rotate(-90 164 165)"
+                    transform="rotate(-90 157 165)"
                     letterSpacing="0.5"
                 >
                     Panasonic LED
@@ -174,15 +176,15 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                     {displayHeightValue.toFixed(2)} m
                 </text>
 
-                {/* 3. Green Badge Above Arrow Line */}
+                {/* Green Badge Above Arrow Line */}
                 <rect x="260" y="53" width="68" height="24" rx="12" fill="#16a34a" />
                 <text x="294" y="69" textAnchor="middle" fontSize="11" fill="#ffffff" fontWeight="700">
                     {optimalDistance.toFixed(2)} m
                 </text>
 
-                {/* 2. OPTIMAL VIEWING DISTANCE ARROW AND TEXT */}
+                {/* OPTIMAL VIEWING DISTANCE ARROW AND TEXT */}
                 <line
-                    x1="173"
+                    x1="163"
                     y1="95"
                     x2="415"
                     y2="95"
@@ -204,9 +206,9 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                     Optimal Viewing Distance
                 </text>
 
-                {/* 4. MAXIMUM VIEWING DISTANCE ARROW, BADGE, AND TEXT */}
+                {/* MAXIMUM VIEWING DISTANCE ARROW, BADGE, AND TEXT */}
                 <line
-                    x1="173"
+                    x1="163"
                     y1="215"
                     x2="735"
                     y2="215"
@@ -262,7 +264,7 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                 </text>
             </svg>
 
-            {/* 5. Simplified Lower Card Panel */}
+            {/* Lower Card Panel */}
             <div
                 style={{
                     marginTop: 24,
@@ -279,15 +281,15 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                 {[
                     {
                         color: "#16a34a",
-                        title: "Optimal Viewing Distance",
+                        title: "Excellent Viewing",
                         value: optimalDistance,
-                        description: "Ideal for close viewing of detailed content.",
+                        description: "Ideal for fine text, spreadsheets, control rooms and detailed presentations.",
                     },
                     {
                         color: "#2563eb",
-                        title: "Maximum Viewing Distance",
+                        title: "Maximum Readability",
                         value: maximumDistance,
-                        description: "Suitable for large venues and long-distance viewing.",
+                        description: "Suitable for large venues where viewers are seated farther away.",
                     },
                 ].map((zone, idx, arr) => (
                     <div
