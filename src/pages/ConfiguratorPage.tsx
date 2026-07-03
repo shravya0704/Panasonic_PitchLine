@@ -13,7 +13,6 @@ import { ScreenPreview } from "../components/configurator/ScreenPreview";
 import { ExportProposalModal } from "../components/configurator/ExportProposalModal";
 import ViewingDistanceVisualizer from "../components/configurator/ViewingDistanceVisualizer";
 
-
 import { Product } from "../types/Product";
 import { ConfigurationResult } from "../types/ConfigurationResult";
 import { BrochurePageService } from "../services/BrochurePageService";
@@ -24,6 +23,8 @@ function ConfiguratorPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    // NEW: Content type state
+    const [contentType, setContentType] = useState<"sample" | "video" | "upload" | "none">("sample");
 
     const [showExportModal, setShowExportModal] = useState(false);
     const [proposalInfo, setProposalInfo] = useState({
@@ -37,11 +38,7 @@ function ConfiguratorPage() {
         const loadProducts = async () => {
             try {
                 const data = await ProductService.getProducts();
-                console.log("Products from DB:", data.length);
-
                 const pages = await BrochurePageService.getPages("PFP");
-                console.log("Brochure Pages:", pages);
-
                 setProducts(data);
             } catch (error) {
                 console.error(error);
@@ -49,7 +46,6 @@ function ConfiguratorPage() {
                 setLoadingProducts(false);
             }
         };
-
         loadProducts();
     }, []);
 
@@ -64,90 +60,41 @@ function ConfiguratorPage() {
             alert("Please select a product and enter valid dimensions.");
             return;
         }
-
         try {
             const config = calculateConfiguration(selectedProduct, width, height);
             setResult(config);
         } catch (error) {
-            alert(
-                `Error calculating configuration: ${error instanceof Error ? error.message : "Unknown error"
-                }`
-            );
+            alert(`Error calculating: ${error instanceof Error ? error.message : "Unknown"}`);
         }
     };
 
-    const handleExportPdf = async (
-        proposalData?: {
-            projectName: string;
-            customerName: string;
-            companyName: string;
-            email: string;
-        }
-    ) => {
-        if (!selectedProduct || !result) {
-            alert("Please calculate a configuration first.");
-            return;
-        }
-
+    const handleExportPdf = async (proposalData?: any) => {
+        if (!selectedProduct || !result) return;
         try {
             let imageData: string | undefined;
-
             if (screenPreviewRef.current) {
-                const canvas = await html2canvas(screenPreviewRef.current, {
-                    scale: 2,
-                });
+                const canvas = await html2canvas(screenPreviewRef.current, { scale: 2 });
                 imageData = canvas.toDataURL("image/png");
             }
-
             const proposalId = generateProposalId();
-
             if (proposalData) {
-                await ProposalService.createProposal(
-                    {
-                        ...proposalData,
-                        proposalId,
-                    },
-                    selectedProduct,
-                    result,
-                    width,
-                    height
-                );
+                await ProposalService.createProposal({ ...proposalData, proposalId }, selectedProduct, result, width, height);
             }
-
-            await generatePdf(
-                selectedProduct,
-                result,
-                width,
-                height,
-                imageData,
-                proposalData,
-                proposalId
-            );
+            await generatePdf(selectedProduct, result, width, height, imageData, proposalData, proposalId);
         } catch (error) {
-            alert(
-                `Error exporting PDF: ${error instanceof Error ? error.message : "Unknown error"
-                }`
-            );
+            alert(`Error exporting PDF: ${error instanceof Error ? error.message : "Unknown"}`);
         }
     };
 
-    if (loadingProducts) {
-        return <div>Loading products...</div>;
-    }
+    if (loadingProducts) return <div>Loading products...</div>;
 
     return (
         <div className="app-container">
-            {/* 💡 CHANGED: New header structure enclosing logo and text container seamlessly */}
             <header className="app-header">
                 <div className="app-header-left">
-                    <img
-                        src={panasonicLogo}
-                        alt="Panasonic"
-                        className="company-logo"
-                    />
+                    <img src={panasonicLogo} alt="Panasonic" className="company-logo" />
                     <div className="app-header-content">
                         <h1>Panasonic PitchLine</h1>
-
                         <p>LED Engineering Suite</p>
                     </div>
                 </div>
@@ -167,26 +114,37 @@ function ConfiguratorPage() {
                             onCalculate={handleCalculate}
                             uploadedImage={uploadedImage}
                             setUploadedImage={setUploadedImage}
+                            contentType={contentType}
+                            setContentType={setContentType}
                         />
                     </div>
 
                     <div className="preview-card">
-                        {result ? (
-                            <div ref={screenPreviewRef}>
-                                <ScreenPreview
-                                    width={result.actualWidth}
-                                    height={result.actualHeight}
-                                    resolutionW={result.resolutionW}
-                                    resolutionH={result.resolutionH}
-                                    cabinetsW={result.cabinetsW}
-                                    cabinetsH={result.cabinetsH}
-                                    model={`${selectedProduct?.applicationType} | ${selectedProduct?.seriesCode} | ${selectedProduct?.model}`}
-                                    brightness={selectedProduct?.brightness}
-                                    pixelPitch={selectedProduct?.pitch}
-                                    result={result}
-                                    uploadedImage={uploadedImage}
-                                />
-                            </div>
+                        {result && selectedProduct ? (
+                            <>
+                                <div ref={screenPreviewRef}>
+                                    <ScreenPreview
+                                        width={result.actualWidth}
+                                        height={result.actualHeight}
+                                        resolutionW={result.resolutionW}
+                                        resolutionH={result.resolutionH}
+                                        cabinetsW={result.cabinetsW}
+                                        cabinetsH={result.cabinetsH}
+                                        model={`${selectedProduct?.applicationType} | ${selectedProduct?.seriesCode} | ${selectedProduct?.model}`}
+                                        brightness={selectedProduct?.brightness}
+                                        pixelPitch={selectedProduct?.pitch}
+                                        result={result}
+                                        uploadedImage={uploadedImage}
+                                        contentType={contentType}
+                                    />
+                                </div>
+                                <div className="export-section">
+                                    <ResultsPanel result={result} selectedProduct={selectedProduct} />
+                                    <button className="export-pdf-button" onClick={() => setShowExportModal(true)}>
+                                        Export PDF
+                                    </button>
+                                </div>
+                            </>
                         ) : (
                             <div>Screen preview will appear here after calculation.</div>
                         )}
@@ -194,29 +152,13 @@ function ConfiguratorPage() {
                 </div>
 
                 {result && selectedProduct && (
-                    <>
-                        <div className="export-section">
-                            <ResultsPanel
-                                result={result}
-                                selectedProduct={selectedProduct}
-                            />
-
-                            <button
-                                className="export-pdf-button"
-                                onClick={() => setShowExportModal(true)}
-                            >
-                                Export PDF
-                            </button>
-                        </div>
-
+                    <div className="analysis-footer">
                         <ViewingDistanceVisualizer
                             pixelPitch={selectedProduct.pitch}
                             actualWidth={result.actualWidth}
                             actualHeight={result.actualHeight}
                         />
-
-                       
-                    </>
+                    </div>
                 )}
             </main>
 

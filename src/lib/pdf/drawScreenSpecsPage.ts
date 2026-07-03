@@ -95,7 +95,7 @@ export const drawScreenSpecsPage = (
   ]);
 
   // =============================
-  // SCREEN PREVIEW (Only shifts the placeholder image down safely)
+  // SCREEN PREVIEW (Aspect-ratio locked and centered perfectly)
   // =============================
   if (screenPreviewImage) {
     doc.addPage();
@@ -104,13 +104,33 @@ export const drawScreenSpecsPage = (
     doc.setFontSize(18);
     doc.text("Screen Preview", 15, 20);
 
+    // Maximum allowable bounding area on an A4 sheet
+    const maxWidth = 185;
+    const maxHeight = 240;
+
+    // Preserve aspect ratio using the actual display specifications
+    const aspectRatio = result.actualHeight / result.actualWidth;
+
+    let imageWidth = maxWidth;
+    let imageHeight = imageWidth * aspectRatio;
+
+    // Fall back to capping by height if the display setup is exceptionally tall
+    if (imageHeight > maxHeight) {
+      imageHeight = maxHeight;
+      imageWidth = imageHeight / aspectRatio;
+    }
+
+    // Centering vector offsets horizontally
+    const x = (210 - imageWidth) / 2;
+    const y = 35; // Leave safe clearance under header text
+
     doc.addImage(
       screenPreviewImage,
       "PNG",
-      10,
-      48,
-      190,
-      140
+      x,
+      y,
+      imageWidth,
+      imageHeight
     );
   }
 };

@@ -98,8 +98,15 @@ export const generatePdf = async (
     }
   }
 
+  // Fallback chain focusing primarily on Project Name
+  const targetProject = proposalData?.projectName || "Project";
+
+  // Sanitize illegal operating system characters to prevent crash-on-save
+  const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
+
+  // Construct final engineered filename assembly
+  const finalFilename = `PitchLine_${product.seriesCode || "LED"}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
+
   // Save Document Binary
-  doc.save(
-    `PitchLine_${proposalId}.pdf`
-);
+  doc.save(finalFilename);
 };

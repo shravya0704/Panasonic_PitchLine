@@ -186,15 +186,14 @@ body {
    5. LIVE CANVAS PREVIEW ADAPTER LABELS
    ========================================================================== */
 .preview-card {
-  background: #FFFFFF;
-  border-radius: 16px;
-  padding: 32px;
-  min-height: 680px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+    display: flex;
+    flex-direction: column; /* This is the key: forces elements to stack vertically */
+    gap: 20px;             /* Adds clean space between the boxes */
+    width: 100%;           /* Ensures it respects the dashboard-layout width */
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 
 .preview-model-badge {
@@ -768,6 +767,117 @@ body {
         transform:translateY(0);
     }
 }
+/* ==========================================================================
+   🟢 NEW: SMART FILTERING & MATCHED MODELS STYLING 
+   ========================================================================== */
+
+.filter-chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.filter-chip-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #ced4da;
+  background-color: #ffffff;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.filter-chip-btn:hover {
+  border-color: #0043a4;
+  background-color: #f8f9fa;
+}
+
+.filter-chip-btn.active {
+  border: 2px solid #0043a4;
+  background-color: #e6f0fa;
+  color: #0043a4;
+  font-weight: 600;
+}
+
+/* Matched Models Grid Blueprint */
+.matched-models-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.model-selection-card {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background-color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.model-selection-card:hover {
+  border-color: #0043a4;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.model-selection-card.selected {
+  border: 2px solid #0043a4;
+  background-color: #f0f6ff;
+  box-shadow: 0 4px 12px rgba(0, 67, 164, 0.15);
+}
+
+.card-model-title {
+  font-weight: bold;
+  color: #212529;
+  margin-bottom: 6px;
+}
+
+.card-metrics-row {
+  font-size: 13px;
+  color: #495057;
+}
+
+.card-badge-container {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.card-badge {
+  font-size: 11px;
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #495057;
+}
+
+/* Dynamic Dead-end Recovery Display */
+.filter-fallback-box {
+  padding: 24px;
+  color: #868e96;
+  text-align: center;
+  border: 1px dashed #dee2e6;
+  border-radius: 8px;
+  margin-top: 10px;
+  background-color: #fafbfc;
+}
+
+.filter-reset-link {
+  color: #0043a4;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-left: 4px;
+}
 
 /* ==========================================================================
    11. MEDIA BREAKPOINTS (Responsive Fluid Grid Scaling)
@@ -821,5 +931,25 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
+}
+.analysis-footer {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* This centers the visualizer */
+    margin-top: 2rem;
+    padding-bottom: 2rem;
+}
+.preview-viewport-container {
+    position: absolute;
+    border: 1px solid #CBD5E1;
+    boxShadow: 0 12px 32px rgba(15,23,42,.12);
+    overflow: hidden;
+}
+
+.preview-background-layer {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
 }
 }
