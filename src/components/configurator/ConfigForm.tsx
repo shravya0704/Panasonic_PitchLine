@@ -9,12 +9,14 @@ interface ConfigFormProps {
   setWidth: (width: number) => void;
   height: number;
   setHeight: (height: number) => void;
-  onCalculate: () => void;
+  // MODIFIED: Added optional parameter overrides to signature
+  onCalculate: (overrideWidth?: number, overrideHeight?: number) => void;
   uploadedImage: string | null;
   setUploadedImage: (image: string | null) => void;
-  // ADD THESE:
   contentType: "sample" | "video" | "upload" | "none";
   setContentType: (type: "sample" | "video" | "upload" | "none") => void;
+  unit: "mtr" | "ft";
+  setUnit: (unit: "mtr" | "ft") => void;
 }
 
 export const ConfigForm = ({
@@ -30,6 +32,8 @@ export const ConfigForm = ({
   setUploadedImage,
   contentType,
   setContentType,
+  unit,
+  setUnit,
 }: ConfigFormProps) => {
   const [applicationType, setApplicationType] = useState("");
   
@@ -38,6 +42,46 @@ export const ConfigForm = ({
   const [brightnessFilter, setBrightnessFilter] = useState<string>("");
   const [ledTypeFilter, setLedTypeFilter] = useState<string>("");
   const [serviceFilter, setServiceFilter] = useState<string>("");
+
+  const METERS_TO_FEET = 3.28084;
+
+  // Local input string states that capture raw typing completely freely
+  const [localWidthStr, setLocalWidthStr] = useState<string>("");
+  const [localHeightStr, setLocalHeightStr] = useState<string>("");
+
+  // Initialize local text inputs with parent dimensions on first load or product reset
+  useEffect(() => {
+    if (width > 0 && localWidthStr === "") {
+      const targetVal = unit === "mtr" ? width : Number((width * METERS_TO_FEET).toFixed(2));
+      setLocalWidthStr(targetVal.toString());
+    }
+  }, [width, unit]);
+
+  useEffect(() => {
+    if (height > 0 && localHeightStr === "") {
+      const targetVal = unit === "mtr" ? height : Number((height * METERS_TO_FEET).toFixed(2));
+      setLocalHeightStr(targetVal.toString());
+    }
+  }, [height, unit]);
+
+  // Convert local text smoothly when explicitly toggling units
+  const handleUnitToggle = (newUnit: "mtr" | "ft") => {
+    if (newUnit === unit) return;
+    
+    const wNum = parseFloat(localWidthStr);
+    const hNum = parseFloat(localHeightStr);
+
+    if (!isNaN(wNum) && wNum > 0) {
+      const convertedW = newUnit === "ft" ? wNum * METERS_TO_FEET : wNum / METERS_TO_FEET;
+      setLocalWidthStr(Number(convertedW.toFixed(2)).toString());
+    }
+    if (!isNaN(hNum) && hNum > 0) {
+      const convertedH = newUnit === "ft" ? hNum * METERS_TO_FEET : hNum / METERS_TO_FEET;
+      setLocalHeightStr(Number(convertedH.toFixed(2)).toString());
+    }
+
+    setUnit(newUnit);
+  };
 
   // Extract distinct master application categories
   const applicationTypes = useMemo(
@@ -100,14 +144,25 @@ export const ConfigForm = ({
     handleClearFilters();
   }, [applicationType]);
 
-  const adjustWidth = (newValue: number) => {
-    const clamped = Math.max(0.5, Math.min(100, Number(newValue.toFixed(2))));
-    setWidth(clamped);
-  };
+  // Submit and lock dimensions ONLY when the user clicks the calculate button
+  const handleSubmitCalculate = () => {
+    const parsedWidth = parseFloat(localWidthStr);
+    const parsedHeight = parseFloat(localHeightStr);
 
-  const adjustHeight = (newValue: number) => {
-    const clamped = Math.max(0.5, Math.min(30, Number(newValue.toFixed(2))));
-    setHeight(clamped);
+    if (isNaN(parsedWidth) || isNaN(parsedHeight) || parsedWidth <= 0 || parsedHeight <= 0) {
+      alert("Please enter valid width and height dimensions.");
+      return;
+    }
+
+    const wMeters = unit === "mtr" ? parsedWidth : parsedWidth / METERS_TO_FEET;
+    const hMeters = unit === "mtr" ? parsedHeight : parsedHeight / METERS_TO_FEET;
+
+    // Push standard dimensions up to engine state
+    setWidth(wMeters);
+    setHeight(hMeters);
+
+    // MODIFIED: Passing raw metric variables immediately into calculations to clear the lag bug
+    onCalculate(wMeters, hMeters);
   };
 
   return (
@@ -282,7 +337,6 @@ export const ConfigForm = ({
       )}
 
       {/* SECTION 4: PREVIEW CANVAS TARGET */}
-      {/* SECTION 4: PREVIEW CANVAS TARGET */}
       <div className="config-section">
         <div className="config-section-title">PREVIEW CONTENT</div>
         
@@ -331,27 +385,49 @@ export const ConfigForm = ({
 
       {/* SECTION 5: BOUNDARY ENGINE METRICS */}
       <div className="config-section">
-        <div className="config-section-title">DISPLAY SIZE</div>
+        <div className="config-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>DISPLAY SIZE</span>
+          <div className="unit-toggle" style={{ display: 'flex', gap: '6px' }}>
+            <button
+              type="button"
+              className={`filter-chip-btn ${unit === 'mtr' ? 'active' : ''}`}
+              style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
+              onClick={() => handleUnitToggle('mtr')}
+            >
+              mtr
+            </button>
+            <button
+              type="button"
+              className={`filter-chip-btn ${unit === 'ft' ? 'active' : ''}`}
+              style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
+              onClick={() => handleUnitToggle('ft')}
+            >
+              ft
+            </button>
+          </div>
+        </div>
 
         {/* Width Workspace Block */}
         <div className="form-group">
           <label className="section-label">DISPLAY WIDTH</label>
           <div className="dimension-card">
             <div className="dimension-control">
-              <button type="button" onClick={() => adjustWidth(width - 0.1)}>−</button>
+              <button type="button" onClick={() => {
+                const currentVal = parseFloat(localWidthStr) || 0;
+                setLocalWidthStr(Math.max(0, currentVal - 0.1).toFixed(2));
+              }}>−</button>
               <div className="dimension-value">
                 <input
-                  type="number"
-                  step="any"
-                  value={width}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (!isNaN(val)) adjustWidth(val);
-                  }}
+                  type="text"
+                  value={localWidthStr}
+                  onChange={(e) => setLocalWidthStr(e.target.value)}
                 />
-                <span>m</span>
+                <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
               </div>
-              <button type="button" onClick={() => adjustWidth(width + 0.1)}>+</button>
+              <button type="button" onClick={() => {
+                const currentVal = parseFloat(localWidthStr) || 0;
+                setLocalWidthStr((currentVal + 0.1).toFixed(2));
+              }}>+</button>
             </div>
           </div>
         </div>
@@ -361,37 +437,36 @@ export const ConfigForm = ({
           <label className="section-label">DISPLAY HEIGHT</label>
           <div className="dimension-card">
             <div className="dimension-control">
-              <button type="button" onClick={() => adjustHeight(height - 0.1)}>−</button>
+              <button type="button" onClick={() => {
+                const currentVal = parseFloat(localHeightStr) || 0;
+                setLocalHeightStr(Math.max(0, currentVal - 0.1).toFixed(2));
+              }}>−</button>
               <div className="dimension-value">
                 <input
-                  type="number"
-                  step="any"
-                  value={height}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    if (!isNaN(val)) adjustHeight(val);
-                  }}
+                  type="text"
+                  value={localHeightStr}
+                  onChange={(e) => setLocalHeightStr(e.target.value)}
                 />
-                <span>m</span>
+                <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
               </div>
-              <button type="button" onClick={() => adjustHeight(height + 0.1)}>+</button>
+              <button type="button" onClick={() => {
+                const currentVal = parseFloat(localHeightStr) || 0;
+                setLocalHeightStr((currentVal + 0.1).toFixed(2));
+              }}>+</button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 💡 RESTORED: The Calculate Button */}
+      {/* Calculate Button */}
       <button
-  className="calculate-button"
-  onClick={onCalculate}
-  disabled={!selectedProduct || width < 0.5 || height < 0.5}
->
-  Generate Configuration
-</button>
+        className="calculate-button"
+        onClick={handleSubmitCalculate}
+        disabled={!selectedProduct || localWidthStr === "" || localHeightStr === ""}
+      >
+        Generate Configuration
+      </button>
       
     </div>
   );
 };
-      
-  
-

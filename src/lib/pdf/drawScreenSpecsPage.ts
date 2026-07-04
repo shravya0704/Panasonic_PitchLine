@@ -8,9 +8,13 @@ export const drawScreenSpecsPage = (
   result: ConfigurationResult,
   screenPreviewImage: string | undefined,
   requestedWidth: number,
-  requestedHeight: number
+  requestedHeight: number,
+  unit: "mtr" | "ft" // ADDED: Unit prop connection
 ): void => {
   
+  const METERS_TO_FEET = 3.28084;
+  const SQ_METERS_TO_SQ_FEET = 10.7639;
+
   // Straightforward Title without external file dependence
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
@@ -20,11 +24,21 @@ export const drawScreenSpecsPage = (
   doc.setDrawColor(210);
   doc.line(15, 28, 195, 28);
 
-  const displayArea = result.actualWidth * result.actualHeight;
+  // Compute Base Structural Dimensions
+  const baseArea = result.actualWidth * result.actualHeight;
   const diagonalMeters = Math.sqrt(
     result.actualWidth * result.actualWidth + result.actualHeight * result.actualHeight
   );
   const diagonalInches = diagonalMeters * 39.3701;
+
+  // Apply conditional metric conversions
+  const sizeText = unit === "mtr"
+    ? `${result.actualWidth.toFixed(2)} × ${result.actualHeight.toFixed(2)} mtr`
+    : `${(result.actualWidth * METERS_TO_FEET).toFixed(2)} × ${(result.actualHeight * METERS_TO_FEET).toFixed(2)} ft`;
+
+  const areaText = unit === "mtr"
+    ? `${baseArea.toFixed(2)} mtr²`
+    : `${(baseArea * SQ_METERS_TO_SQ_FEET).toFixed(2)} ft²`;
 
   const maxPower = result.maximumPower;
   const avgPower = result.averagePower;
@@ -63,8 +77,8 @@ export const drawScreenSpecsPage = (
   ]);
 
   drawSection("Display Dimensions", 105, 40, [
-    { label: "Actual Display Size", value: `${result.actualWidth.toFixed(2)} × ${result.actualHeight.toFixed(2)} m` },
-    { label: "Display Area", value: `${displayArea.toFixed(2)} m²` },
+    { label: "Actual Display Size", value: sizeText },
+    { label: "Display Area", value: areaText },
     { label: "Display Diagonal", value: `${diagonalInches.toFixed(2)} inch` },
   ]);
 

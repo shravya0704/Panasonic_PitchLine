@@ -1,5 +1,4 @@
 import "../App.css";
-import panasonicLogo from "../assets/Panasonic-logo.jpg";
 import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 
@@ -19,12 +18,17 @@ import { BrochurePageService } from "../services/BrochurePageService";
 import { ProposalService } from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
 
+// FIXED: Bypasses static image compilation checks to clear asset declaration breaks
+const panasonicLogo = new URL("../assets/Panasonic-logo.jpg", import.meta.url).href;
+
 function ConfiguratorPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-    // NEW: Content type state
     const [contentType, setContentType] = useState<"sample" | "video" | "upload" | "none">("sample");
+
+    // Unit measurement state (mtr or ft)
+    const [unit, setUnit] = useState<"mtr" | "ft">("mtr");
 
     const [showExportModal, setShowExportModal] = useState(false);
     const [proposalInfo, setProposalInfo] = useState({
@@ -55,13 +59,16 @@ function ConfiguratorPage() {
     const [result, setResult] = useState<ConfigurationResult | null>(null);
     const screenPreviewRef = useRef<HTMLDivElement>(null);
 
-    const handleCalculate = () => {
-        if (!selectedProduct || width <= 0 || height <= 0) {
+    const handleCalculate = (overrideWidth?: number, overrideHeight?: number) => {
+        const targetWidth = overrideWidth !== undefined ? overrideWidth : width;
+        const targetHeight = overrideHeight !== undefined ? overrideHeight : height;
+
+        if (!selectedProduct || targetWidth <= 0 || targetHeight <= 0) {
             alert("Please select a product and enter valid dimensions.");
             return;
         }
         try {
-            const config = calculateConfiguration(selectedProduct, width, height);
+            const config = calculateConfiguration(selectedProduct, targetWidth, targetHeight);
             setResult(config);
         } catch (error) {
             alert(`Error calculating: ${error instanceof Error ? error.message : "Unknown"}`);
@@ -80,12 +87,12 @@ function ConfiguratorPage() {
             if (proposalData) {
                 await ProposalService.createProposal({ ...proposalData, proposalId }, selectedProduct, result, width, height);
             }
-            await generatePdf(selectedProduct, result, width, height, imageData, proposalData, proposalId);
+            // FIXED: 'unit' is now passed at the very end of this call
+            await generatePdf(selectedProduct, result, width, height, imageData, proposalData, proposalId, unit);
         } catch (error) {
             alert(`Error exporting PDF: ${error instanceof Error ? error.message : "Unknown"}`);
         }
     };
-
     if (loadingProducts) return <div>Loading products...</div>;
 
     return (
@@ -116,6 +123,8 @@ function ConfiguratorPage() {
                             setUploadedImage={setUploadedImage}
                             contentType={contentType}
                             setContentType={setContentType}
+                            unit={unit}
+                            setUnit={setUnit}
                         />
                     </div>
 
@@ -136,10 +145,11 @@ function ConfiguratorPage() {
                                         result={result}
                                         uploadedImage={uploadedImage}
                                         contentType={contentType}
+                                        unit={unit}
                                     />
                                 </div>
                                 <div className="export-section">
-                                    <ResultsPanel result={result} selectedProduct={selectedProduct} />
+                                    <ResultsPanel result={result} selectedProduct={selectedProduct} unit={unit} />
                                     <button className="export-pdf-button" onClick={() => setShowExportModal(true)}>
                                         Export PDF
                                     </button>

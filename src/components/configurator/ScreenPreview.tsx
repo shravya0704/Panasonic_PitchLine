@@ -15,16 +15,26 @@ interface ScreenPreviewProps {
   uploadedImage?: string | null;
   result?: { actualWidth: number; actualHeight: number } | null;
   contentType: "sample" | "video" | "upload" | "none";
+  // ADDED: Unit tracking prop
+  unit: "mtr" | "ft";
 }
 
 export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
-  ({ width, height, resolutionW, resolutionH, cabinetsW, cabinetsH, model, brightness = 800, pixelPitch = 1.875, uploadedImage, result, contentType }, ref) => {
+  ({ width, height, resolutionW, resolutionH, cabinetsW, cabinetsH, model, brightness = 800, pixelPitch = 1.875, uploadedImage, result, contentType, unit }, ref) => {
     const MAX_PREVIEW_WIDTH = 550;
     const MAX_PREVIEW_HEIGHT = 360;
+    const METERS_TO_FEET = 3.28084;
+
     const safeWidth = width || 1;
     const safeHeight = height || 1;
-    const displayWidthText = result?.actualWidth ? result.actualWidth.toFixed(2) : safeWidth.toFixed(2);
-    const displayHeightText = result?.actualHeight ? result.actualHeight.toFixed(2) : safeHeight.toFixed(2);
+
+    // Convert underlying calculations conditionally for display matching
+    const baseWidth = result?.actualWidth ? result.actualWidth : safeWidth;
+    const baseHeight = result?.actualHeight ? result.actualHeight : safeHeight;
+
+    const displayWidthText = (unit === "mtr" ? baseWidth : baseWidth * METERS_TO_FEET).toFixed(2);
+    const displayHeightText = (unit === "mtr" ? baseHeight : baseHeight * METERS_TO_FEET).toFixed(2);
+
     const scale = Math.min(MAX_PREVIEW_WIDTH / safeWidth, MAX_PREVIEW_HEIGHT / safeHeight);
     const screenWidthPx = safeWidth * scale;
     const screenHeightPx = safeHeight * scale;
@@ -32,7 +42,12 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const marginRight = 210;
     const marginTop = 70;
     const marginBottom = 80;
-    const viewingDistance = pixelPitch !== undefined ? (pixelPitch * 1.5).toFixed(2) : "-";
+
+    // Convert viewing distance metrics uniformly matching the global state
+    const baseViewingDistance = pixelPitch !== undefined ? pixelPitch * 1.5 : null;
+    const viewingDistance = baseViewingDistance !== null 
+      ? (unit === "mtr" ? baseViewingDistance : baseViewingDistance * METERS_TO_FEET).toFixed(2) 
+      : "-";
 
     return (
       <div ref={ref} style={{ marginTop: "40px", padding: "30px", background: "#FFFFFF", borderRadius: "18px", border: "1px solid #E2E8F0", boxShadow: "0 10px 30px rgba(15,23,42,.06)", color: "#000" }}>
@@ -46,10 +61,10 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
           <div style={{ position: "relative", width: screenWidthPx + marginLeft + marginRight, height: screenHeightPx + marginTop + marginBottom, background: "#F8FAFC" }}>
             
             {/* Top Engineering Label */}
-            <div style={{ position: "absolute", top: 15, left: `${marginLeft + screenWidthPx / 2}px`, transform: "translateX(-50%)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>{displayWidthText} m</div>
+            <div style={{ position: "absolute", top: 15, left: `${marginLeft + screenWidthPx / 2}px`, transform: "translateX(-50%)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>{displayWidthText} {unit}</div>
             
             {/* Side Engineering Label */}
-            <div style={{ position: "absolute", left: 15, top: `${marginTop + screenHeightPx / 2}px`, transform: "translateY(-50%) rotate(-90deg)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>{displayHeightText} m</div>
+            <div style={{ position: "absolute", left: 15, top: `${marginTop + screenHeightPx / 2}px`, transform: "translateY(-50%) rotate(-90deg)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0" }}>{displayHeightText} {unit}</div>
 
             {/* HERO VIEWPORT */}
             <div style={{ position: "absolute", top: marginTop, left: marginLeft, width: screenWidthPx, height: screenHeightPx, border: "1px solid #CBD5E1", overflow: "hidden", backgroundColor: contentType === "none" ? "#0043A4" : "#F8FAFC" }}>
@@ -76,7 +91,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               <div style={{ fontSize: "16px", fontWeight: 700, borderBottom: "1px solid rgba(46, 125, 50, 0.2)", marginBottom: "8px" }}>{resolutionW} × {resolutionH} px</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Pixel Pitch: {pixelPitch} mm</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Brightness: {brightness} nits</div>
-              <div style={{ fontSize: 13, color: "#475569" }}>Viewing Distance: {viewingDistance} m</div>
+              <div style={{ fontSize: 13, color: "#475569" }}>Viewing Distance: {viewingDistance} {unit}</div>
             </div>
 
             {/* SILHOUETTE */}

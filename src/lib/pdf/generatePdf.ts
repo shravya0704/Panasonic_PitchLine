@@ -25,7 +25,8 @@ export const generatePdf = async (
     companyName: string;
     email: string;
   },
-  proposalId?: string
+  proposalId?: string,
+  unit: "mtr" | "ft" = "mtr" // ADDED: Unit state targeting Page 3 with a safe fallback
 ): Promise<void> => {
   const doc = new jsPDF();
 
@@ -50,7 +51,7 @@ export const generatePdf = async (
     );
   }
 
-  // Page 4: Screen Configuration (Spares are removed here, Power/Heat added here)
+  // Page 3: Screen Configuration (Drawing logic now intercepts measurement metrics cleanly)
   doc.addPage();
   drawScreenSpecsPage(
     doc,
@@ -58,14 +59,15 @@ export const generatePdf = async (
     result,
     screenPreviewImage,
     width,
-    height
+    height,
+    unit // PASSED: Direct transmission of unit choice
   );
 
-  // Page 5: Product Specs Page
+  // Page 4: Product Specs Page
   doc.addPage();
   await drawProductSpecsPage(doc, product);
 
-  // Page 6: Power Diagram Page
+  // Page 5: Power Diagram Page
   doc.addPage();
   const powerFlow = calculatePowerFlow(result.cabinetsH, 16);
   const assignmentGrid = assignPowerChains(
@@ -75,7 +77,7 @@ export const generatePdf = async (
   );
   drawPowerDiagramPage(doc, result, assignmentGrid);
 
-  // Page 7: Data Diagram Page
+  // Page 6: Data Diagram Page
   doc.addPage();
   drawDataDiagramPage(doc, product, result);
 
