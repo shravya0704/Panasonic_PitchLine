@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 import { getBrochureForSeries } from "../../services/brochureService";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
-import { addPdfFooter } from "./addPdfFooter";
+import { applyGlobalPageTemplate } from "./addPdfFooter"; 
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
 import { addBrochurePages } from "./addBrochurePages";
 import { drawScreenSpecsPage } from "./drawScreenSpecsPage";
@@ -12,6 +12,10 @@ import { drawDataDiagramPage } from "./drawDataDiagramPage";
 import { calculatePowerFlow } from "../calculations/calculatePowerFlow";
 import { assignPowerChains } from "../calculations/assignPowerChains";
 import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
+
+// IMPORT THE HARDCODED BASE64 STRING
+
+import { panasonicLogoBase64 } from "../../assets/logoBase64";
 
 export const generatePdf = async (
   product: Product,
@@ -26,7 +30,7 @@ export const generatePdf = async (
     email: string;
   },
   proposalId?: string,
-  unit: "mtr" | "ft" = "mtr" // ADDED: Unit state targeting Page 3 with a safe fallback
+  unit: "mtr" | "ft" = "mtr" 
 ): Promise<void> => {
   const doc = new jsPDF();
 
@@ -51,7 +55,7 @@ export const generatePdf = async (
     );
   }
 
-  // Page 3: Screen Configuration (Drawing logic now intercepts measurement metrics cleanly)
+  // Page 3: Screen Configuration
   doc.addPage();
   drawScreenSpecsPage(
     doc,
@@ -60,7 +64,7 @@ export const generatePdf = async (
     screenPreviewImage,
     width,
     height,
-    unit // PASSED: Direct transmission of unit choice
+    unit
   );
 
   // Page 4: Product Specs Page
@@ -89,13 +93,15 @@ export const generatePdf = async (
     const totalPages = doc.getNumberOfPages();
     console.log("TOTAL PDF PAGES:", totalPages);
 
+    // Pass the base64 string directly to the template
     for (let i = 2; i <= totalPages; i++) {
       doc.setPage(i);
-      addPdfFooter(
+      applyGlobalPageTemplate(
         doc,
         proposalId,
         i,
-        totalPages
+        totalPages,
+        panasonicLogoBase64 // <-- Using the string here!
       );
     }
   }

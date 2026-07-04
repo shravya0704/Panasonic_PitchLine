@@ -1,6 +1,6 @@
-import "../App.css";
 import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
+import "../App.css";
 
 import { ProductService } from "../services/ProductService";
 import { calculateConfiguration } from "../lib/calculations/calculateConfiguration";
