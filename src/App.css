@@ -952,4 +952,34 @@ input[type="number"] {
     background-size: cover;
     background-position: center;
 }
+/* =========================================
+   FORCE OVERRIDES FOR COMPACT CARDS
+   ========================================= */
+
+.model-selection-card.compact-card .compact-card-top {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.model-selection-card.compact-card .card-badge-container {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+}
+
+.model-selection-card.compact-card .compact-metrics {
+  font-size: 11px !important; 
+  white-space: nowrap !important; 
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  width: 100% !important;
+}
 }

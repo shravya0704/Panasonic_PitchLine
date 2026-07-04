@@ -271,7 +271,7 @@ export const ConfigForm = ({
         </div>
       </div>
 
-      {/* SECTION 2: LIVE HARDWARE SEARCH OUTPUT */}
+     {/* SECTION 2: LIVE HARDWARE SEARCH OUTPUT */}
       <div className="config-section">
         <div className="config-section-title">MATCHED MODELS ({filteredProducts.length})</div>
         {filteredProducts.length === 0 ? (
@@ -282,29 +282,65 @@ export const ConfigForm = ({
             </button>
           </div>
         ) : (
-          <div className="matched-models-grid">
+          <div className="matched-models-grid compact-scroll-list">
             {filteredProducts.map((product) => {
               const isSelected = selectedProduct?.id === product.id;
               const ledType = getProductSpec(product, "LED Type");
               const service = getProductSpec(product, "Service Access");
               
-              return (
+             return (
                 <div
                   key={product.id}
                   className={`model-selection-card ${isSelected ? "selected" : ""}`}
                   onClick={() => setSelectedProduct(product)}
+                  style={{
+                    padding: "10px 12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px"
+                  }}
                 >
-                  <div className="card-model-title">{product.model}</div>
-                  <div className="card-metrics-row">
-                    <div>Pitch: <strong>{product.pitch} mm</strong></div>
-                    <div>Brightness: <strong>{product.brightness} nits</strong></div>
-                  </div>
-                  {(ledType || service) && (
-                    <div className="card-badge-container">
-                      {ledType && <span className="card-badge">{ledType}</span>}
-                      {service && <span className="card-badge">{service}</span>}
+                  {/* TOP ROW: Title on left, Badges on right */}
+                  <div style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center", 
+                    width: "100%",
+                    flexWrap: "nowrap",
+                    gap: "8px"
+                  }}>
+                    <div style={{ 
+                      fontWeight: 600, 
+                      fontSize: "14px", 
+                      whiteSpace: "nowrap", 
+                      overflow: "hidden", 
+                      textOverflow: "ellipsis",
+                      flexGrow: 1
+                    }}>
+                      {product.model}
                     </div>
-                  )}
+                    
+                    {(ledType || service) && (
+                      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                        {ledType && <span className="card-badge">{ledType}</span>}
+                        {service && <span className="card-badge">{service}</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* BOTTOM ROW: Pitch and Brightness forced to one line */}
+                  <div style={{ 
+                    fontSize: "11.5px", 
+                    color: "#555", 
+                    whiteSpace: "nowrap", 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis",
+                    width: "100%"
+                  }}>
+                    Pitch: <strong>{product.pitch} mm</strong> 
+                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span> 
+                    Brightness: <strong>{product.brightness} nits</strong>
+                  </div>
                 </div>
               );
             })}

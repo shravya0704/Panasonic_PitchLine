@@ -283,13 +283,13 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                         color: "#16a34a",
                         title: "Excellent Viewing",
                         value: optimalDistance,
-                        description: "Ideal for fine text, spreadsheets, control rooms and detailed presentations.",
+                        description: "Ideal for fine text, spreadsheets, control rooms and detailed presentations. Recommended for indoor LED installations where viewers are in close proximity to the screen.",
                     },
                     {
                         color: "#2563eb",
                         title: "Maximum Readability",
                         value: maximumDistance,
-                        description: "Suitable for large venues where viewers are seated farther away.",
+                        description: "Suitable for large venues, retail spaces, and advertising displays where content is designed to capture attention from a distance.",
                     },
                 ].map((zone, idx, arr) => (
                     <div
