@@ -29,6 +29,9 @@ function ConfiguratorPage() {
 
     // Unit measurement state (mtr or ft)
     const [unit, setUnit] = useState<"mtr" | "ft">("mtr");
+    
+    // ADDED: Target resolution state
+    const [targetResolution, setTargetResolution] = useState<"None" | "HD" | "FHD" | "UHD">("None");
 
     const [showExportModal, setShowExportModal] = useState(false);
     const [proposalInfo, setProposalInfo] = useState({
@@ -125,6 +128,9 @@ function ConfiguratorPage() {
                             setContentType={setContentType}
                             unit={unit}
                             setUnit={setUnit}
+                            // ADDED: Passing state to the form
+                            targetResolution={targetResolution}
+                            setTargetResolution={setTargetResolution}
                         />
                     </div>
 
@@ -146,6 +152,8 @@ function ConfiguratorPage() {
                                         uploadedImage={uploadedImage}
                                         contentType={contentType}
                                         unit={unit}
+                                        // ADDED: Passing state to the preview
+                                        targetResolution={targetResolution}
                                     />
                                 </div>
                                 <div className="export-section">

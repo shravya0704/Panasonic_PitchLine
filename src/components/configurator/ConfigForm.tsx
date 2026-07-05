@@ -9,7 +9,6 @@ interface ConfigFormProps {
   setWidth: (width: number) => void;
   height: number;
   setHeight: (height: number) => void;
-  // MODIFIED: Added optional parameter overrides to signature
   onCalculate: (overrideWidth?: number, overrideHeight?: number) => void;
   uploadedImage: string | null;
   setUploadedImage: (image: string | null) => void;
@@ -17,6 +16,9 @@ interface ConfigFormProps {
   setContentType: (type: "sample" | "video" | "upload" | "none") => void;
   unit: "mtr" | "ft";
   setUnit: (unit: "mtr" | "ft") => void;
+  // ADDED: Resolution targeting props
+  targetResolution: "None" | "HD" | "FHD" | "UHD";
+  setTargetResolution: (res: "None" | "HD" | "FHD" | "UHD") => void;
 }
 
 export const ConfigForm = ({
@@ -34,6 +36,8 @@ export const ConfigForm = ({
   setContentType,
   unit,
   setUnit,
+  targetResolution,
+  setTargetResolution,
 }: ConfigFormProps) => {
   const [applicationType, setApplicationType] = useState("");
   
@@ -161,7 +165,7 @@ export const ConfigForm = ({
     setWidth(wMeters);
     setHeight(hMeters);
 
-    // MODIFIED: Passing raw metric variables immediately into calculations to clear the lag bug
+    // Passing raw metric variables immediately into calculations to clear the lag bug
     onCalculate(wMeters, hMeters);
   };
 
@@ -490,6 +494,44 @@ export const ConfigForm = ({
                 setLocalHeightStr((currentVal + 0.1).toFixed(2));
               }}>+</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 6: TARGET RESOLUTION (FHD/4K) */}
+      <div className="config-section">
+        <div className="config-section-title">TARGET RESOLUTION OVERLAY</div>
+        <div className="form-group">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+            {["None", "HD", "FHD", "UHD"].map((res) => (
+              <label 
+                key={res} 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "10px", 
+                  cursor: "pointer", 
+                  fontSize: "14px", 
+                  color: "#334155",
+                  fontWeight: targetResolution === res ? 600 : 400
+                }}
+              >
+                <input
+                  type="radio"
+                  name="targetResolution"
+                  value={res}
+                  checked={targetResolution === res}
+                  onChange={(e) => setTargetResolution(e.target.value as any)}
+                  style={{ 
+                    accentColor: "#005BAC", 
+                    width: "16px", 
+                    height: "16px",
+                    cursor: "pointer"
+                  }}
+                />
+                {res === "UHD" ? "UHD (4K)" : res}
+              </label>
+            ))}
           </div>
         </div>
       </div>
