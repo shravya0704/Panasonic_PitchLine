@@ -1,6 +1,15 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 
+// Helper: Capitalizes the first letter of each word (Title Case)
+const formatTitleCase = (text: string) => {
+  if (!text) return "";
+  return text
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 export const drawProposalSummaryPage = (
   doc: jsPDF,
   product: Product,
@@ -55,13 +64,13 @@ export const drawProposalSummaryPage = (
   doc.setDrawColor(235, 235, 235);
   doc.line(25, card1Y + 18, 185, card1Y + 18);
 
-  // Card Content
+  // Card Content - APPLIED TITLE CASE FORMATTING HERE
   const infoData = [
     { label: "Proposal ID:", value: proposalId },
-    { label: "Project Name:", value: proposalData.projectName },
-    { label: "Customer Name:", value: proposalData.customerName },
-    { label: "Company Name:", value: proposalData.companyName },
-    { label: "Email:", value: proposalData.email },
+    { label: "Project Name:", value: formatTitleCase(proposalData.projectName) },
+    { label: "Customer Name:", value: formatTitleCase(proposalData.customerName) },
+    { label: "Company Name:", value: formatTitleCase(proposalData.companyName) },
+    { label: "Email:", value: proposalData.email?.toLowerCase() },
     { label: "Generated On:", value: new Date().toLocaleDateString() }
   ];
 
