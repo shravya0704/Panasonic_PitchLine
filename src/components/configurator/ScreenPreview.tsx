@@ -17,7 +17,7 @@ interface ScreenPreviewProps {
   contentType: "sample" | "video" | "upload" | "none";
   unit: "mtr" | "ft";
   // ADDED: Target Resolution Tracking
-  targetResolution?: "None" | "HD" | "FHD" | "UHD"; 
+  targetResolution?: "None" | "HD" | "FHD" | "UHD";
 }
 
 const STANDARD_RESOLUTIONS = {
@@ -50,8 +50,8 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const marginBottom = 80;
 
     const baseViewingDistance = pixelPitch !== undefined ? pixelPitch * 1.5 : null;
-    const viewingDistance = baseViewingDistance !== null 
-      ? (unit === "mtr" ? baseViewingDistance : baseViewingDistance * METERS_TO_FEET).toFixed(2) 
+    const viewingDistance = baseViewingDistance !== null
+      ? (unit === "mtr" ? baseViewingDistance : baseViewingDistance * METERS_TO_FEET).toFixed(2)
       : "-";
 
     // ==========================================
@@ -62,7 +62,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
     if (targetResolution !== "None" && resolutionW > 0 && resolutionH > 0) {
       const target = STANDARD_RESOLUTIONS[targetResolution];
-      
+
       // OPTION B: Check if the screen is too small
       if (resolutionW < target.w || resolutionH < target.h) {
         resolutionWarning = `Screen too small for native ${targetResolution}`;
@@ -70,7 +70,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
         // Calculate how many boxes fit
         const cols = Math.floor(resolutionW / target.w);
         const rows = Math.floor(resolutionH / target.h);
-        
+
         // Calculate leftover pixels to center the boxes
         const offsetX = (resolutionW - (cols * target.w)) / 2;
         const offsetY = (resolutionH - (rows * target.h)) / 2;
@@ -104,16 +104,16 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
         <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "20px" }}>
           <div style={{ position: "relative", width: screenWidthPx + marginLeft + marginRight, height: screenHeightPx + marginTop + marginBottom, background: "#F8FAFC" }}>
-            
+
             {/* Top Engineering Label */}
             <div style={{ position: "absolute", top: 15, left: `${marginLeft + screenWidthPx / 2}px`, transform: "translateX(-50%)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0", zIndex: 10 }}>{displayWidthText} {unit}</div>
-            
+
             {/* Side Engineering Label */}
             <div style={{ position: "absolute", left: 15, top: `${marginTop + screenHeightPx / 2}px`, transform: "translateY(-50%) rotate(-90deg)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0", zIndex: 10 }}>{displayHeightText} {unit}</div>
 
             {/* HERO VIEWPORT */}
             <div style={{ position: "absolute", top: marginTop, left: marginLeft, width: screenWidthPx, height: screenHeightPx, border: "1px solid #CBD5E1", overflow: "hidden", backgroundColor: contentType === "none" ? "#0043A4" : "#F8FAFC" }}>
-              
+
               {/* CONTENT LAYER */}
               {(contentType === "sample" || contentType === "upload") && (
                 <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${contentType === "upload" && uploadedImage ? uploadedImage : screenImage})`, backgroundSize: "cover", backgroundPosition: "center" }} />
@@ -133,7 +133,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               {/* ========================================== */}
               {/* TARGET RESOLUTION RED BOXES OVERLAY        */}
               {/* ========================================== */}
-              
+
               {/* Small Screen Warning overlay */}
               {resolutionWarning && (
                 <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
@@ -145,26 +145,26 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
               {/* Red Bounding Boxes */}
               {!resolutionWarning && overlayBoxes.map((box, idx) => (
-                <div key={`res-box-${idx}`} style={{ 
-                  position: "absolute", 
-                  top: `${box.top}%`, 
-                  left: `${box.left}%`, 
-                  width: `${box.width}%`, 
-                  height: `${box.height}%`, 
+                <div key={`res-box-${idx}`} style={{
+                  position: "absolute",
+                  top: `${box.top}%`,
+                  left: `${box.left}%`,
+                  width: `${box.width}%`,
+                  height: `${box.height}%`,
                   border: "2px solid #EF4444", // Red border mimicking LG
                   boxSizing: "border-box", // Ensures borders don't misalign the math
                   zIndex: 4
                 }}>
                   {/* Top Left Red Badge */}
-                  <div style={{ 
-                    position: "absolute", 
-                    top: 0, 
-                    left: 0, 
-                    background: "#EF4444", 
-                    color: "#FFFFFF", 
-                    padding: "2px 8px", 
-                    fontSize: "10px", 
-                    fontWeight: 700 
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    background: "#EF4444",
+                    color: "#FFFFFF",
+                    padding: "2px 8px",
+                    fontSize: "10px",
+                    fontWeight: 700
                   }}>
                     {targetResolution}
                   </div>
@@ -173,7 +173,18 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             </div>
 
             {/* INFO CARD */}
-            <div style={{ position: "absolute", top: 28, right: 12, background: "#FFFFFF", border: "1px solid #D6DEE8", borderRadius: 12, padding: "10px 14px", width: 165, zIndex: 10 }}>
+            <div style={{
+              position: "absolute",
+              top: 28,
+              // Anchor to the right of the screen instead of the right of the container
+              left: marginLeft + screenWidthPx + 20,
+              background: "#FFFFFF",
+              border: "1px solid #D6DEE8",
+              borderRadius: 12,
+              padding: "10px 14px",
+              width: 165,
+              zIndex: 10
+            }}>
               <div style={{ fontSize: "16px", fontWeight: 700, borderBottom: "1px solid rgba(46, 125, 50, 0.2)", marginBottom: "8px" }}>{resolutionW} × {resolutionH} px</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Pixel Pitch: {pixelPitch} mm</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Brightness: {brightness} nits</div>
@@ -181,13 +192,36 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             </div>
 
             {/* SILHOUETTE */}
-            <img src={human} alt="Human Scale" style={{ position: "absolute", right: 55, bottom: marginBottom, height: Math.min(screenHeightPx * 0.42, 125), opacity: 0.35 }} />
-            <div style={{ position: "absolute", right: 10, bottom: marginBottom - 34, width: 120, textAlign: "center", fontSize: 12, color: "#64748B", fontWeight: 600 }}>Human Scale Reference</div>
+            <img
+              src={human}
+              alt="Human Scale"
+              style={{
+                position: "absolute",
+                // Anchor to the right of the screen
+                left: marginLeft + screenWidthPx + 40,
+                bottom: marginBottom,
+                height: Math.min(screenHeightPx * 0.42, 125),
+                opacity: 0.35
+              }}
+            />
+            <div style={{
+              position: "absolute",
+              // Align text perfectly under the newly anchored human
+              left: marginLeft + screenWidthPx + 5,
+              bottom: marginBottom - 34,
+              width: 120,
+              textAlign: "center",
+              fontSize: 12,
+              color: "#64748B",
+              fontWeight: 600
+            }}>
+              Human Scale Reference
+            </div>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
-);
+      );
+    }
+  );
 
 ScreenPreview.displayName = "ScreenPreview";
