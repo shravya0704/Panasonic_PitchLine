@@ -94,7 +94,7 @@ export const generatePdf = async (
     console.log("TOTAL PDF PAGES:", totalPages);
 
     // Pass the base64 string directly to the template
-    for (let i = 2; i <= totalPages; i++) {
+    for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(
         doc,
