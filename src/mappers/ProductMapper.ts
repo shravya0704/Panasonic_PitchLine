@@ -1,7 +1,21 @@
 import { Product } from "../types/Product";
 
+/**
+ * Utility object responsible for transforming product data between the backend 
+ * database format and the frontend TypeScript interface.
+ * * This creates a boundary layer that protects the frontend from database schema 
+ * changes and handles the conversion between SQL snake_case and JavaScript camelCase.
+ */
 export const ProductMapper = {
+  /**
+   * Converts a raw row retrieved from the Supabase database into a strictly typed Product object.
+   *
+   * @param {any} row - The raw data object returned from a Supabase query (typically using snake_case keys).
+   * @returns {Product} The formatted Product object ready for use in the React frontend.
+   */
   fromDatabase(row: any): Product {
+    // We map snake_case database columns to camelCase frontend properties here.
+    // This ensures our UI components never have to deal with backend naming conventions.
     return {
       id: row.id,
       model: row.model,
@@ -22,7 +36,17 @@ export const ProductMapper = {
     };
   },
 
+  /**
+   * Transforms a frontend Product object back into the schema format required by the Supabase database.
+   *
+   * @param {Product} product - The strictly typed frontend Product object.
+   * @returns {object} A plain object with snake_case keys, ready to be passed into a Supabase insert or update query.
+   */
   toDatabase(product: Product) {
+    // The 'id' field is intentionally omitted from this mapping.
+    // For inserts, the database auto-generates the UUID. 
+    // For updates, the ID is typically passed as a match() parameter in the Supabase query, 
+    // not in the body of the update payload itself.
     return {
       model: product.model,
       series_code: product.seriesCode,

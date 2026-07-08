@@ -88,10 +88,34 @@ export const ConfigForm = ({
   };
 
   // Extract distinct master application categories
-  const applicationTypes = useMemo(
-    () => Array.from(new Set(products.map((p) => p.applicationType))),
-    [products]
-  );
+  const applicationTypes = useMemo(() => {
+  // 1. Get unique types safely
+  const rawTypes = products
+    .map(p => p.applicationType)
+    .filter(Boolean) as string[];
+    
+  const uniqueTypes = [...new Set(rawTypes)];
+
+  // 2. Sort them using a foolproof lowercase map
+  return uniqueTypes.sort((a, b) => {
+    // Convert to lowercase and remove accidental spaces for the comparison
+    const safeA = a.toLowerCase().trim();
+    const safeB = b.toLowerCase().trim();
+
+    // Define the exact order we want
+    const orderMap: Record<string, number> = {
+      "indoor (flat display)": 1,
+      "indoor (curve display)": 2,
+      "outdoor": 3
+    };
+
+    // If it finds a match, it gets a score 1-3. If not, it drops to the bottom (99).
+    const scoreA = orderMap[safeA] || 99;
+    const scoreB = orderMap[safeB] || 99;
+
+    return scoreA - scoreB;
+  });
+}, [products]);
 
   const pitchRanges = ["<= 1.0mm", "1.1mm - 1.6mm", ">= 1.7mm"];
   const brightnessRanges = ["<= 1000 nits", "> 1000 nits"];
