@@ -1,7 +1,10 @@
 import React from "react";
 
+// Base64 is intentionally used instead of a file URL because
+// html2canvas does not reliably rasterize external SVG <image>
+// references during PDF generation.
 // Resolved path for the existing human asset used in ScreenPreview
-const human = new URL("../../assets/human.png", import.meta.url).href;
+import { humanBase64 } from "../../assets/humanBase64";
 
 interface ViewingDistanceVisualizerProps {
     pixelPitch: number;
@@ -248,7 +251,7 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
                 <g transform="translate(775, 130)">
                     <rect x="0" y="0" width="70" height="160" fill="#f8fafc" opacity="0.9" />
                     <image
-                        href={human}
+                        href={humanBase64}
                         x="0"
                         y="0"
                         width="70"

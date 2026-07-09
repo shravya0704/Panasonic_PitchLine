@@ -61,6 +61,9 @@ function ConfiguratorPage() {
     // Ref used to capture the DOM node of the screen preview for the PDF export screenshot.
     const screenPreviewRef = useRef<HTMLDivElement>(null);
 
+    // Ref used to capture the Viewing Distance Visualizer for the PDF export.
+    const viewingDistanceRef = useRef<HTMLDivElement>(null);
+
     /**
      * Initialization hook.
      * Fetches the product catalog and necessary marketing assets (brochures) as soon as the app mounts.
@@ -118,6 +121,7 @@ function ConfiguratorPage() {
         if (!selectedProduct || !result) return;
         try {
             let imageData: string | undefined;
+            let viewingDistanceImage: string | undefined;
             
             // We use html2canvas to take a literal "screenshot" of the React DOM element.
             // Using { scale: 2 } forces a higher resolution capture (Retina-like quality), 
@@ -125,6 +129,16 @@ function ConfiguratorPage() {
             if (screenPreviewRef.current) {
                 const canvas = await html2canvas(screenPreviewRef.current, { scale: 2 });
                 imageData = canvas.toDataURL("image/png");
+            }
+
+            // Capture the Viewing Distance Visualizer so it can be rendered
+            // as a dedicated engineering page in the proposal PDF.
+            if (viewingDistanceRef.current) {
+                const canvas = await html2canvas(viewingDistanceRef.current, {
+                    scale: 2,
+                });
+
+                viewingDistanceImage = canvas.toDataURL("image/png");
             }
             
             const proposalId = generateProposalId();
@@ -136,7 +150,24 @@ function ConfiguratorPage() {
             }
             
             // FIXED: 'unit' is now passed at the very end of this call
-            await generatePdf(selectedProduct, result, width, height, imageData, proposalData, proposalId, unit);
+            const typedGeneratePdf = generatePdf as (
+                product: Product,
+                result: ConfigurationResult,
+                width: number,
+                height: number,
+                screenPreviewImage?: string,
+                viewingDistanceImage?: string,
+                proposalData?: {
+                    projectName: string;
+                    customerName: string;
+                    companyName: string;
+                    email: string;
+                },
+                proposalId?: string,
+                unit?: "mtr" | "ft"
+            ) => Promise<void>;
+
+            await typedGeneratePdf(selectedProduct, result, width, height, imageData, viewingDistanceImage, proposalData, proposalId, unit);
         } catch (error) {
             alert(`Error exporting PDF: ${error instanceof Error ? error.message : "Unknown"}`);
         }
@@ -216,7 +247,10 @@ function ConfiguratorPage() {
                 </div>
 
                 {result && selectedProduct && (
-                    <div className="analysis-footer">
+                    <div
+                        className="analysis-footer"
+                        ref={viewingDistanceRef}
+                    >
                         <ViewingDistanceVisualizer
                             pixelPitch={selectedProduct.pitch}
                             actualWidth={result.actualWidth}

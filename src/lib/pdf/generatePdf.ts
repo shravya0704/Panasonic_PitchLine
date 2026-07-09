@@ -6,11 +6,13 @@ import { applyGlobalPageTemplate } from "./addPdfFooter";
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
 import { addBrochurePages } from "./addBrochurePages";
 import { drawScreenSpecsPage } from "./drawScreenSpecsPage";
+import { drawViewingDistancePage } from "./drawViewingDistancePage";
 import { drawProductSpecsPage } from "./drawProductSpecsPage";
 import { drawPowerDiagramPage } from "./drawPowerDiagramPage";
 import { drawDataDiagramPage } from "./drawDataDiagramPage";
 import { calculatePowerFlow } from "../calculations/calculatePowerFlow";
 import { assignPowerChains } from "../calculations/assignPowerChains";
+import { POWER_RULES } from "../rules/PowerRules";
 import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
 
 // IMPORT THE HARDCODED BASE64 STRING
@@ -29,6 +31,7 @@ import { panasonicLogoBase64 } from "../../assets/logoBase64";
  * @param {number} width - The requested screen width.
  * @param {number} height - The requested screen height.
  * @param {string} [screenPreviewImage] - The base64 UI screenshot captured via html2canvas.
+ * @param {string} [viewingDistanceImage] - Base64 snapshot of the Viewing Distance Visualizer captured using html2canvas.
  * @param {object} [proposalData] - Customer and project details from the export modal.
  * @param {string} [proposalId] - The unique system-generated identifier for the proposal.
  * @param {"mtr" | "ft"} [unit="mtr"] - The measurement system selected by the user, defaults to meters.
@@ -40,6 +43,7 @@ export const generatePdf = async (
   width: number,
   height: number,
   screenPreviewImage?: string,
+  viewingDistanceImage?: string,
   proposalData?: {
     projectName: string;
     customerName: string;
@@ -86,15 +90,32 @@ export const generatePdf = async (
     unit
   );
 
-  // Page 4: Product Specs Page
+  // Page 4: Viewing Distance Analysis
+  doc.addPage();
+  await drawViewingDistancePage(
+    doc,
+    viewingDistanceImage
+  );
+
+  // Page 5: Product Specifications
   doc.addPage();
   await drawProductSpecsPage(doc, product);
 
-  // Page 5: Power Diagram Page
+  // Page 6: Power Diagram Page
   doc.addPage();
   // We calculate the power flow dynamically right before drawing the page. 
   // This abstracts the heavy math out of the drawing function, keeping the PDF builders strictly focused on layout.
-  const powerFlow = calculatePowerFlow(result.cabinetsH, 16);
+  // Select the appropriate engineering limit based on the installation environment.
+const maxCabinetsPerChain =
+  product.applicationType === "Outdoor"
+    ? POWER_RULES.outdoor.maxCabinetsPerChain
+    : POWER_RULES.indoor.maxCabinetsPerChain;
+
+// Calculate the power distribution using the correct engineering rule.
+const powerFlow = calculatePowerFlow(
+  result.cabinetsH,
+  maxCabinetsPerChain
+);
   const assignmentGrid = assignPowerChains(
     result.cabinetsW,
     result.cabinetsH,
@@ -102,7 +123,7 @@ export const generatePdf = async (
   );
   drawPowerDiagramPage(doc, result, assignmentGrid);
 
-  // Page 6: Data Diagram Page
+  // Page 7: Data Diagram Page
   doc.addPage();
   drawDataDiagramPage(doc, product, result);
 
@@ -114,12 +135,12 @@ export const generatePdf = async (
     const totalPages = doc.getNumberOfPages();
     console.log("TOTAL PDF PAGES:", totalPages);
 
-    // WHY LOOP FROM 2 TO 7?
+    // WHY LOOP FROM 2 TO 8?
     // We start at i=2 because Page 1 is a full-bleed marketing cover (we don't want a footer ruining the graphic).
-    // We cap it at i<=7 to apply footers only to the core engineering pages. 
+    // We cap it at i<=8 to apply footers only to the core engineering pages. 
     // We intentionally stop before the appended brochure pages, as marketing assets already have their own design layouts.
     // Pass the base64 string directly to the template
-    for (let i = 2; i <= 7; i++) {
+    for (let i = 2; i <= 8; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(
         doc,
