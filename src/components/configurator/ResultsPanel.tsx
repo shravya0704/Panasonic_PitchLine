@@ -29,7 +29,8 @@ export const ResultsPanel = ({
   const areaText = (unit === "mtr" ? baseArea : baseArea * SQ_METERS_TO_SQ_FEET).toFixed(2);
   const actualWidthText = (unit === "mtr" ? baseWidth : baseWidth * METERS_TO_FEET).toFixed(2);
   const actualHeightText = (unit === "mtr" ? baseHeight : baseHeight * METERS_TO_FEET).toFixed(2);
-
+const diagonalText = `${Math.round(result.diagonalInches)} in`;
+const aspectRatio = result.aspectRatio;
   const maxHeatBTU = result.maximumHeatBTU ?? (result.maximumPower * 3.412142);
   const avgHeatBTU = result.averageHeatBTU ?? (result.averagePower * 3.412142);
 
@@ -125,32 +126,47 @@ export const ResultsPanel = ({
           </div>
           <div className="metrics-row-grid physical-six-columns">
             <div className="premium-metric-card">
-              <span className="metric-label">Total Cabinets</span>
-              <span className="metric-value">{result.totalCabinets}</span>
-            </div>
-            <div className="premium-metric-card">
               <span className="metric-label">Actual Width</span>
               <span className="metric-value">
                 {actualWidthText} {unit}
               </span>
             </div>
+
             <div className="premium-metric-card">
               <span className="metric-label">Actual Height</span>
               <span className="metric-value">
                 {actualHeightText} {unit}
               </span>
             </div>
+
+            <div className="premium-metric-card">
+              <span className="metric-label">Cabinets (Width)</span>
+              <span className="metric-value">{result.cabinetsW}</span>
+            </div>
+
+            <div className="premium-metric-card">
+              <span className="metric-label">Cabinets (Height)</span>
+              <span className="metric-value">{result.cabinetsH}</span>
+            </div>
+
+            <div className="premium-metric-card">
+              <span className="metric-label">Diagonal Size</span>
+              <span className="metric-value">{diagonalText}</span>
+            </div>
+
+            <div className="premium-metric-card">
+              <span className="metric-label">Aspect Ratio</span>
+              <span className="metric-value">{aspectRatio}</span>
+            </div>
+
+            <div className="premium-metric-card">
+              <span className="metric-label">Total Cabinets</span>
+              <span className="metric-value">{result.totalCabinets}</span>
+            </div>
+
             <div className="premium-metric-card">
               <span className="metric-label">Total Modules</span>
               <span className="metric-value">{result.totalModules}</span>
-            </div>
-            <div className="premium-metric-card">
-              <span className="metric-label">Cabinets Wide</span>
-              <span className="metric-value">{result.cabinetsW}</span>
-            </div>
-            <div className="premium-metric-card">
-              <span className="metric-label">Cabinets High</span>
-              <span className="metric-value">{result.cabinetsH}</span>
             </div>
           </div>
         </div>

@@ -51,20 +51,29 @@ export const drawScreenSpecsPage = (
   };
 
   const drawCardContent = (x: number, y: number, items: { label: string; value: string }[], colWidth: number) => {
+    const isWrappedLayout = items.length > 3;
+    const itemsPerRow = isWrappedLayout ? Math.ceil(items.length / 2) : items.length;
+    const labelYOffset = isWrappedLayout ? 19 : 21;
+    const valueYOffset = isWrappedLayout ? 27 : 29;
+    const rowYOffset = isWrappedLayout ? 12 : 0;
+
     items.forEach((item, index) => {
-      const currentX = x + 7 + (index * colWidth);
+      const row = isWrappedLayout ? Math.floor(index / itemsPerRow) : 0;
+      const column = isWrappedLayout ? index % itemsPerRow : index;
+      const currentX = x + 7 + (column * colWidth);
+      const currentY = y + labelYOffset + (row * rowYOffset);
       
       // Label
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
-      doc.text(item.label, currentX, y + 21);
+      doc.text(item.label, currentX, currentY);
 
       // Value
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.setTextColor(50, 50, 50);
-      doc.text(item.value, currentX, y + 29);
+      doc.text(item.value, currentX, y + valueYOffset + (row * rowYOffset));
     });
   };
 
@@ -78,10 +87,10 @@ export const drawScreenSpecsPage = (
   const METERS_TO_FEET = 3.28084;
   const SQ_METERS_TO_SQ_FEET = 10.7639;
   const baseArea = result.actualWidth * result.actualHeight;
-  const diagonalMeters = Math.sqrt(
-    result.actualWidth * result.actualWidth + result.actualHeight * result.actualHeight
-  );
-  const diagonalInches = diagonalMeters * 39.3701;
+  // Consume engineering values from the configuration engine.
+  // Keeping calculations centralized ensures the UI and PDF always remain identical.
+  const diagonalInches = result.diagonalInches;
+  const aspectRatio = result.aspectRatio;
 
   const sizeText = unit === "mtr"
     ? `${result.actualWidth.toFixed(2)} × ${result.actualHeight.toFixed(2)} m`
@@ -106,23 +115,83 @@ export const drawScreenSpecsPage = (
 
   // Card 2: DISPLAY DIMENSIONS
   currentY += 43;
-  drawCard(15, currentY, 180, 38, "DISPLAY DIMENSIONS");
-  drawCardContent(15, currentY, [
-    { label: "Actual Display Size", value: sizeText },
-    { label: "Display Area", value: areaText },
-    { label: "Display Diagonal", value: `${diagonalInches.toFixed(2)} inch` }
-  ], 58);
+  drawCard(15, currentY, 180, 62, "DISPLAY DIMENSIONS");
+  // ---------- Row 1 ----------
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Actual Display Size", 22, currentY + 20);
+  doc.text("Display Area", 112, currentY + 20);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(50, 50, 50);
+  doc.text(sizeText, 22, currentY + 28);
+  doc.text(areaText, 112, currentY + 28);
+
+  // ---------- Row 2 ----------
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+
+  doc.text("Display Diagonal", 22, currentY + 42);
+  doc.text("Aspect Ratio", 112, currentY + 42);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(50, 50, 50);
+
+  doc.text(`${Math.round(diagonalInches)} in`, 22, currentY + 51);
+  doc.text(aspectRatio, 112, currentY + 51);
 
   // Card 3: DISPLAY PERFORMANCE
-  currentY += 43;
-  drawCard(15, currentY, 180, 38, "DISPLAY PERFORMANCE");
-  drawCardContent(15, currentY, [
-    { label: "Resolution", value: `${result.resolutionW.toLocaleString()} × ${result.resolutionH.toLocaleString()}` },
-    { label: "No. of Controllers", value: "1" }
-  ], 85);
+  currentY += 67;
+  drawCard(15, currentY, 180, 62, "DISPLAY PERFORMANCE");
+  // ---------- Row 1 ----------
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120,120,120);
+
+  doc.text("Resolution",22,currentY + 20);
+  doc.text("Pixel Pitch",82,currentY + 20);
+  doc.text("Brightness",132,currentY + 20);
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.setTextColor(50,50,50);
+
+  doc.text(
+    `${result.resolutionW} × ${result.resolutionH}`,
+    22,
+    currentY + 28
+  );
+
+  doc.text(`${product.pitch} mm`,82,currentY + 28);
+
+  doc.text(`${product.brightness} nits`,132,currentY + 28);
+
+  // ---------- Row 2 ----------
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120,120,120);
+
+  doc.text("Viewing Distance",22,currentY + 42);
+  doc.text("No. of Controllers",132,currentY + 42);
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(12);
+  doc.setTextColor(50,50,50);
+
+  doc.text(
+    `${(product.pitch * 1.5).toFixed(2)} m`,
+    22,
+    currentY + 51
+  );
+
+  doc.text("1",132,currentY + 51);
 
   // Cards 4 & 5: ELECTRICAL & THERMAL (Side-by-Side to match design balance)
-  currentY += 43;
+  currentY += 67;
   
   // Electrical (Left Half)
   drawCard(15, currentY, 87.5, 38, "ELECTRICAL REQUIREMENTS");
@@ -148,7 +217,7 @@ export const drawScreenSpecsPage = (
       drawPageTitles("SCREEN PREVIEW");
   
       // Frame the image inside a clean white card for a premium look
-      const cardY = 55;
+      const cardY = 50;
       const cardHeight = 205; 
       
       doc.setFillColor(255, 255, 255);

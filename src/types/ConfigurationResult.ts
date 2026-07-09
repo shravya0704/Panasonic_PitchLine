@@ -26,4 +26,5 @@ export interface ConfigurationResult {
   averageHeatBTU: number;
 
   diagonalInches: number;
+  aspectRatio: string;
 }
