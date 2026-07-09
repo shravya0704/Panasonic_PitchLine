@@ -2,22 +2,35 @@ import jsPDF from "jspdf";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
 import { POWER_RULES } from "../rules/PowerRules";
 
-const BASE_COLORS = [
-  { fill: [191, 219, 254], line: [30, 64, 175] },
-  { fill: [187, 247, 208], line: [21, 128, 61] },
-  { fill: [254, 202, 202], line: [185, 28, 28] },
-  { fill: [253, 230, 138], line: [161, 98, 7] },
-  { fill: [233, 213, 255], line: [107, 33, 168] },
-  { fill: [165, 243, 252], line: [14, 116, 144] },
-  { fill: [254, 215, 170], line: [194, 65, 12] },
-  { fill: [209, 250, 229], line: [6, 95, 70] },
-];
+/*
+ * Power Flow Diagram Theme
+ * ------------------------
+ * This page intentionally uses a single monochrome engineering theme.
+ * Colour identifies the engineering layer (Power), while the chain
+ * labels (A, B, C...) identify individual power chains.
+ */
+const POWER_THEME = {
+  fill: [245, 245, 245],
+  line: [0, 0, 0],
+  border: [180, 180, 180],
+};
 
-function getColorForChain(chain: string) {
-  const index = chain.charCodeAt(0) - 65;
-  return BASE_COLORS[index % BASE_COLORS.length];
+function getPowerTheme() {
+  return POWER_THEME;
 }
 
+/*
+ * Generates the Power Flow Diagram page for the proposal PDF.
+ *
+ * Responsibilities:
+ * - Render the cabinet layout received from the power assignment logic.
+ * - Draw vertical power cable paths.
+ * - Display the engineering assumptions used for power distribution.
+ *
+ * NOTE:
+ * This file performs no power-routing calculations.
+ * It only renders the assignmentGrid supplied by upstream business logic.
+ */
 export const drawPowerDiagramPage = (
   doc: jsPDF,
   result: ConfigurationResult,
@@ -26,106 +39,91 @@ export const drawPowerDiagramPage = (
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // ==========================================
-  // 1. GLOBAL PAGE BACKGROUND
-  // ==========================================
-  doc.setFillColor(244, 247, 250); // Pastel slate-blue theme
+  // 1. Global page background
+  doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // ==========================================
-  // 2. PAGE TITLES
-  // ==========================================
+  // 2. Page header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(0, 85, 165); // Panasonic Blue
+  doc.setTextColor(0, 85, 165);
   doc.text("DISPLAY SOLUTIONS", 15, 35);
 
   doc.setFontSize(22);
   doc.setTextColor(30, 30, 30);
   doc.text("POWER FLOW DIAGRAM", 15, 45);
 
-  // Header Divider
   doc.setDrawColor(210);
   doc.line(15, 55, pageWidth - 15, 55);
 
-  // ==========================================
-  // 3. GRID CALCULATIONS
-  // ==========================================
+  // 3. Calculate printable grid dimensions.
   const rows = assignmentGrid.length;
   const cols = assignmentGrid[0].length;
 
   const availableWidth = 160;
   const availableHeight = 150;
 
-  const cellSize = Math.min(
-    availableWidth / cols,
-    availableHeight / rows
-  );
+  const cellSize = Math.min(availableWidth / cols, availableHeight / rows);
 
   const gridWidth = cols * cellSize;
   const gridHeight = rows * cellSize;
 
-  // Center the grid on the page horizontally
   const startX = (pageWidth - gridWidth) / 2;
-  const startY = 70; // Shifted down to accommodate the enterprise header
+  const startY = 70;
 
-  // ==========================================
-  // 4. DRAW WHITE CARD CONTAINER
-  // ==========================================
+  // 4. White card container behind the engineering drawing.
   const padding = 10;
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(220, 225, 230);
   doc.roundedRect(
-    startX - padding, 
-    startY - padding, 
-    gridWidth + (padding * 2), 
-    gridHeight + (padding * 2), 
-    2, 
-    2, 
+    startX - padding,
+    startY - padding,
+    gridWidth + padding * 2,
+    gridHeight + padding * 2,
+    2,
+    2,
     "FD"
   );
 
-  // ==========================================
-  // 5. DRAW CABINETS
-  // ==========================================
+  // 5. Draw cabinets.
+  // Every cabinet uses the same light grey fill.
+  // Chain letters distinguish different power chains.
+  const theme = getPowerTheme();
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const chain = assignmentGrid[row][col];
-      const colors = getColorForChain(chain);
       const x = startX + col * cellSize;
       const y = startY + row * cellSize;
 
-      doc.setFillColor(colors.fill[0], colors.fill[1], colors.fill[2]);
-      doc.setDrawColor(120, 120, 120);
+      doc.setFillColor(theme.fill[0], theme.fill[1], theme.fill[2]);
+      doc.setDrawColor(theme.border[0], theme.border[1], theme.border[2]);
       doc.rect(x, y, cellSize, cellSize, "FD");
 
       if (cellSize > 7) {
-        doc.setTextColor(colors.line[0], colors.line[1], colors.line[2]);
+        doc.setTextColor(theme.line[0], theme.line[1], theme.line[2]);
         doc.setFontSize(7);
-        // top-left so cable doesn't cut it
         doc.text(chain, x + 1.5, y + 4);
       }
     }
   }
 
-  // ==========================================
-  // 6. DRAW POWER CABLES
-  // ==========================================
+  // 6. Build a lookup of cabinets belonging to each power chain.
   const chainMap = new Map<string, { row: number; col: number }[]>();
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const chain = assignmentGrid[row][col];
-      if (!chainMap.has(chain)) {
-        chainMap.set(chain, []);
-      }
+      if (!chainMap.has(chain)) chainMap.set(chain, []);
       chainMap.get(chain)!.push({ row, col });
     }
   }
 
-  chainMap.forEach((points, chain) => {
-    const colors = getColorForChain(chain);
-    doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
+  // Draw one continuous vertical power cable per chain.
+  // Unlike the Data Flow Diagram, the cable is centred because this page
+  // represents the actual power path.
+  chainMap.forEach((points) => {
+    doc.setDrawColor(theme.line[0], theme.line[1], theme.line[2]);
     doc.setLineWidth(1.2);
 
     points.sort((a, b) => a.row - b.row);
@@ -139,37 +137,35 @@ export const drawPowerDiagramPage = (
 
     doc.line(x, y1, x, y2);
 
-    // power source marker
-    doc.setFillColor(colors.line[0], colors.line[1], colors.line[2]);
+    // Filled circle indicates the power feed entry point.
+    doc.setFillColor(theme.line[0], theme.line[1], theme.line[2]);
     doc.circle(x, y1, 1.5, "F");
   });
+
+  // Reset drawing state so later PDF pages are unaffected.
   doc.setLineWidth(0.2);
 
-  // ==========================================
-  // 7. POWER DISTRIBUTION RULES (Note format)
-  // ==========================================
+  // 7. Engineering notes.
   const rulesY = startY + gridHeight + padding + 15;
 
-  // Rule Title
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8); // Reduced from 9
-  doc.setTextColor(0, 85, 165); // Panasonic Blue
+  doc.setFontSize(8);
+  doc.setTextColor(0, 85, 165);
   doc.text("NOTE: POWER DISTRIBUTION RULES", 15, rulesY);
 
-  // Rule Details
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7); // Reduced from 8
-  doc.setTextColor(100, 100, 100); // Changed to soft grey
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
 
   doc.text(
     `• Indoor Layouts: Maximum of ${POWER_RULES.indoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.indoor.voltage}V | ${POWER_RULES.indoor.cable}`,
     15,
-    rulesY + 5 // Tightened spacing
+    rulesY + 5
   );
 
   doc.text(
     `• Outdoor Layouts: Maximum of ${POWER_RULES.outdoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.outdoor.voltage}V | ${POWER_RULES.outdoor.cable}`,
     15,
-    rulesY + 9 // Tightened spacing
+    rulesY + 9
   );
 };
