@@ -13,7 +13,11 @@ interface ScreenPreviewProps {
   brightness?: number;
   pixelPitch?: number;
   uploadedImage?: string | null;
-  result?: { actualWidth: number; actualHeight: number } | null;
+  result?: {
+    actualWidth: number;
+    actualHeight: number;
+    diagonalInches: number;
+  } | null;
   contentType: "sample" | "video" | "upload" | "none";
   unit: "mtr" | "ft";
   // ADDED: Target Resolution Tracking
@@ -53,6 +57,11 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const viewingDistance = baseViewingDistance !== null
       ? (unit === "mtr" ? baseViewingDistance : baseViewingDistance * METERS_TO_FEET).toFixed(2)
       : "-";
+
+    const diagonalText =
+      result?.diagonalInches !== undefined
+        ? Math.round(result.diagonalInches)
+        : "-";
 
     // ==========================================
     // RESOLUTION OVERLAY CALCULATIONS
@@ -122,6 +131,55 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                 <video autoPlay muted loop playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} src="/sample-loop.mp4" />
               )}
 
+              {/* ENGINEERING DIAGONAL OVERLAY */}
+              {result?.diagonalInches && (
+                <svg
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    zIndex: 2,
+                    overflow: "visible",
+                  }}
+                >
+                  <line
+                    x1="4%"
+                    y1="4%"
+                    x2="96%"
+                    y2="96%"
+                    stroke="rgba(255,255,255,0.75)"
+                    strokeWidth="2"
+                    strokeDasharray="8 6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+
+              {result?.diagonalInches && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
+                    background: "rgba(255,255,255,0.92)",
+                    border: "1px solid #CBD5E1",
+                    borderRadius: 6,
+                    padding: "3px 10px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#0F172A",
+                    zIndex: 5,
+                    pointerEvents: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {diagonalText} in
+                </div>
+              )}
+
               {/* GRID LINES */}
               {Array.from({ length: Math.max(0, cabinetsW - 1) }).map((_, i) => (
                 <div key={`v-${i}`} style={{ position: "absolute", left: `${((i + 1) * 100) / (cabinetsW || 1)}%`, top: 0, bottom: 0, borderLeft: "1px solid rgba(255, 255, 255, 0.6)" }} />
@@ -188,6 +246,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               <div style={{ fontSize: "16px", fontWeight: 700, borderBottom: "1px solid rgba(46, 125, 50, 0.2)", marginBottom: "8px" }}>{resolutionW} × {resolutionH} px</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Pixel Pitch: {pixelPitch} mm</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Brightness: {brightness} nits</div>
+              <div style={{ fontSize: 13, color: "#475569" }}>Diagonal: {diagonalText} in</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Viewing Distance: {viewingDistance} {unit}</div>
             </div>
 
@@ -217,11 +276,11 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             }}>
               Human Scale Reference
             </div>
-            </div>
           </div>
         </div>
-      );
-    }
-  );
+      </div>
+    );
+  }
+);
 
 ScreenPreview.displayName = "ScreenPreview";

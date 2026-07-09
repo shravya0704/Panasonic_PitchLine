@@ -2,7 +2,7 @@ import { Product } from "../../types/Product";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
 
 /**
- * Calculates the exact physical and technical specifications for an LED display wall 
+ * Calculates the exact physical and technical specifications for an LED display wall
  * based on a target size and the selected hardware constraints.
  *
  * @param {Product} product - The selected Panasonic LED product model containing physical and electrical specifications.
@@ -28,7 +28,7 @@ export const calculateConfiguration = (
   const requestedHeightMm = requestedHeight * 1000;
 
   // Excel uses ROUNDDOWN
-  // We use Math.floor here to ensure the generated screen never exceeds the user's requested physical bounds. 
+  // We use Math.floor here to ensure the generated screen never exceeds the user's requested physical bounds.
   // It is better to be slightly smaller than the target space than to generate a configuration that won't fit on the client's wall.
   const cabinetsW = Math.floor(
     requestedWidthMm / product.cabinetWidth
@@ -73,7 +73,16 @@ export const calculateConfiguration = (
   const averageHeat =
     averagePower;
 
-  // Multiply wattage by 3.412 to convert watts directly into BTU/hr. 
+  // Calculate the physical screen diagonal in inches.
+  // Formula matches the legacy engineering Excel tool:
+  // =SQRT(POWER(Width*1000,2)+POWER(Height*1000,2))/25.4
+  const diagonalInches =
+    Math.sqrt(
+      Math.pow(actualWidth * 1000, 2) +
+      Math.pow(actualHeight * 1000, 2)
+    ) / 25.4;
+
+  // Multiply wattage by 3.412 to convert watts directly into BTU/hr.
   // This is a standard conversion factor critical for AV integrators to plan HVAC cooling loads.
   const maximumHeatBTU =
     maximumPower * 3.412;
@@ -107,5 +116,7 @@ export const calculateConfiguration = (
     maximumHeatBTU,
 
     averageHeatBTU,
+
+    diagonalInches,
   };
 };

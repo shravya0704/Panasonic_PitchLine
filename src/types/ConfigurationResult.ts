@@ -24,4 +24,6 @@ export interface ConfigurationResult {
   maximumHeatBTU: number;
 
   averageHeatBTU: number;
+
+  diagonalInches: number;
 }
