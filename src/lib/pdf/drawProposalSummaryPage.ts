@@ -128,9 +128,19 @@ export const drawProposalSummaryPage = (
     doc.text(item.label, xPos, card2Y + 30);
 
     // Value
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(50, 50, 50);
-    doc.text(item.value, xPos, card2Y + 40);
+    // Value
+doc.setFont("helvetica", "bold");
+doc.setFontSize(11);
+doc.setTextColor(50, 50, 50);
+
+// Constrain long values (especially the model name)
+// so they remain within their allotted column.
+const wrappedValue = doc.splitTextToSize(item.value, colWidth - 3);
+
+doc.text(
+  wrappedValue,
+  xPos,
+  card2Y + 40
+);
   });
 };
