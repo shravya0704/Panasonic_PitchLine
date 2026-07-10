@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { CurvedScreenPreview } from "./CurvedScreenPreview";
+
 const screenImage = new URL("../../assets/screen-preview.jpg", import.meta.url).href;
 const human = new URL("../../assets/human.png", import.meta.url).href;
 
@@ -31,7 +31,7 @@ const STANDARD_RESOLUTIONS = {
   UHD: { w: 3840, h: 2160 },
 };
 
-export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
+export const CurvedScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
   ({ width, height, resolutionW, resolutionH, cabinetsW, cabinetsH, model, brightness = 800, pixelPitch = 1.875, uploadedImage, result, contentType, unit, targetResolution = "None" }, ref) => {
     const MAX_PREVIEW_WIDTH = 550;
     const MAX_PREVIEW_HEIGHT = 360;
@@ -71,29 +71,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     // ==========================================
     const isCurved =
       model?.toUpperCase().includes("PIS-C") ?? false;
-      // Route curved LED models to the dedicated curved preview.
-// This keeps the existing flat preview completely untouched.
-if (isCurved) {
-  return (
-    <CurvedScreenPreview
-      ref={ref}
-      width={width}
-      height={height}
-      resolutionW={resolutionW}
-      resolutionH={resolutionH}
-      cabinetsW={cabinetsW}
-      cabinetsH={cabinetsH}
-      model={model}
-      brightness={brightness}
-      pixelPitch={pixelPitch}
-      uploadedImage={uploadedImage}
-      result={result}
-      contentType={contentType}
-      unit={unit}
-      targetResolution={targetResolution}
-    />
-  );
-}
 
     // ==========================================
     // RESOLUTION OVERLAY CALCULATIONS
@@ -102,10 +79,7 @@ if (isCurved) {
     let resolutionWarning = null;
 
     if (targetResolution !== "None" && resolutionW > 0 && resolutionH > 0) {
-      const target =
-  STANDARD_RESOLUTIONS[
-    targetResolution as keyof typeof STANDARD_RESOLUTIONS
-  ];
+      const target = STANDARD_RESOLUTIONS[targetResolution];
 
       // OPTION B: Check if the screen is too small
       if (resolutionW < target.w || resolutionH < target.h) {
@@ -163,14 +137,27 @@ if (isCurved) {
               width: screenWidthPx,
               height: screenHeightPx,
 
-              border: "1px solid #CBD5E1",
-
-              overflow: "hidden",
-
               backgroundColor:
                 contentType === "none" ? "#0043A4" : "#F8FAFC",
 
-              
+              backgroundImage:
+                "linear-gradient(to bottom, rgba(255,255,255,.08), rgba(0,0,0,.06))",
+
+              overflow: "hidden",
+
+              /* ========================================== */
+              /* CURVED REPRESENTATIVE FRAME (R211 MOCK)    */
+              /* ========================================== */
+              border: "2px solid #CBD5E1",
+
+              borderTopLeftRadius: "120px 22px",
+              borderTopRightRadius: "120px 22px",
+
+              borderBottomLeftRadius: "120px 22px",
+              borderBottomRightRadius: "120px 22px",
+
+              boxShadow:
+                "0 14px 34px rgba(15,23,42,.18), inset 0 0 18px rgba(255,255,255,.08)",
             }}>
 
               {/* CONTENT LAYER */}
@@ -194,25 +181,6 @@ if (isCurved) {
                     overflow: "visible",
                   }}
                 >
-                  {/* Curved outline */}
-                  {isCurved && (
-                    <path
-                      d="
-      M 2 20
-      Q 18 2 50 2
-      L 98 2
-      Q 82 50 98 98
-      L 50 98
-      Q 18 98 2 80
-      Q 8 50 2 20
-    "
-                      fill="none"
-                      stroke="rgba(255,255,255,.55)"
-                      strokeWidth="1.8"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  )}
-
                   {/* Existing engineering diagonal */}
                   <line
                     x1="4%"
@@ -254,7 +222,7 @@ if (isCurved) {
 
               {/* GRID LINES */}
               {Array.from({ length: Math.max(0, cabinetsW - 1) }).map((_, i) => (
-                <div key={`v-${i}`} style={{ position: "absolute", left: `${((i + 1) * 100) / (cabinetsW || 1)}%`, top: 0, bottom: 0, borderLeft: "1px solid rgba(255, 255, 255, 0.6)" }} />
+                <div key={`v-${i}`} style={{ position: "absolute", left: `calc(${((i + 1) * 100) / (cabinetsW || 1)}% + ${Math.sin((((i + 1) / (cabinetsW || 1)) - 0.5) * Math.PI) * 5}px)`, top: 0, bottom: 0, borderLeft: "1px solid rgba(255, 255, 255, 0.6)" }} />
               ))}
               {Array.from({ length: Math.max(0, cabinetsH - 1) }).map((_, i) => (
                 <div key={`h-${i}`} style={{ position: "absolute", top: `${((i + 1) * 100) / (cabinetsH || 1)}%`, left: 0, right: 0, borderTop: "1px solid rgba(255, 255, 255, 0.6)" }} />
@@ -320,6 +288,36 @@ if (isCurved) {
               <div style={{ fontSize: 13, color: "#475569" }}>Brightness: {brightness} nits</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Diagonal: {diagonalText} in</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Viewing Distance: {viewingDistance} {unit}</div>
+              {isCurved && (
+                <>
+                  <hr
+                    style={{
+                      margin: "8px 0",
+                      border: 0,
+                      borderTop: "1px solid #E2E8F0",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#0055A5",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Curved Display
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#64748B",
+                    }}
+                  >
+                    Representative Radius: R211
+                  </div>
+                </>
+              )}
             </div>
 
             {/* SILHOUETTE */}
@@ -355,4 +353,4 @@ if (isCurved) {
   }
 );
 
-ScreenPreview.displayName = "ScreenPreview";
+CurvedScreenPreview.displayName = "CurvedScreenPreview";
