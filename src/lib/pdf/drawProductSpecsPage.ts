@@ -7,7 +7,7 @@ export const drawProductSpecsPage = async (
   product: Product
 ): Promise<void> => {
   const specs = await ProductSpecificationService.getByModel(product.model);
-
+console.log("PRODUCT OBJECT:", product);
   console.log("PRODUCT SPECS JSON:", JSON.stringify(specs, null, 2));
 
   if (!specs || Object.keys(specs).length === 0) {
@@ -160,20 +160,27 @@ export const drawProductSpecsPage = async (
   drawSection(
     "PHYSICAL PARAMETERS",
     [
-      ["Pixel Configuration", specs["Pixel Configuration"]],
-      ["Pixel Pitch", getSpec("Pixel Pitch", "Pixel Pitch (mm)") + " mm"],
-      ["Module Resolution", specs["Module Resolution"]],
-      ["Module Dimensions", specs["Module Dimensions"]],
-      ["Module Weight", specs["Module Weight"]],
-      ["Modules Per Cabinet", specs["Modules Per Cabinet"]],
-      ["Cabinet Resolution", specs["Cabinet Resolution"]],
-      ["Cabinet Dimensions", specs["Cabinet Dimensions"]],
+      ["Pixel Configuration", getSpec("Pixel Configuration", "LED Type")],
+      ["Pixel Pitch", `${product.pitch} mm`],
+      ["Module Resolution", getSpec("Module Resolution")],
+      ["Module Dimensions", getSpec("Module Dimensions")],
+      ["Module Weight", getSpec("Module Weight")],
+      ["Modules Per Cabinet", product.modulesPerCabinet.toString()],
+      [
+  "Cabinet Resolution",
+  `${product.cabinetResolutionW} × ${product.cabinetResolutionH}`
+],
+      [
+  "Cabinet Dimensions",
+  `${product.cabinetWidth} × ${product.cabinetHeight} mm`
+],
       ["Cabinet Surface Area", `${cabinetArea} m²`],
       ["Cabinet Weight", specs["Cabinet Weight"]],
       ["Weight Per m²", weightPerM2],
       ["Flatness", "0.1 mm"],
-      ["Cabinet Material", specs["Cabinet Material"]],
-      ["Service Access", specs["Service Access"]],
+      ["Cabinet Material", getSpec("Cabinet Material")],
+      ["Service Access", getSpec("Service Access")],
+      ["Curve Radius", getSpec("Curve Radius", "611R Curvature (Concave/Convex)")],
     ],
     "left"
   );
@@ -181,14 +188,32 @@ export const drawProductSpecsPage = async (
   drawSection(
     "OPTICAL SPECIFICATIONS",
     [
-      ["Brightness", specs["Brightness"]],
-      ["Pixel Density", specs["Pixel Density"]],
-      ["Color Temperature", specs["Color Temperature"]],
-      ["Viewing Angle", specs["Viewing Angle"]],
+      ["Brightness", `${product.brightness} nits`],
+      ["Pixel Density", getSpec("Pixel Density")],
+      [
+        "Color Temperature",
+        getSpec(
+          "Color Temperature",
+          "Color Temperature (K)"
+        )
+      ],
+      [
+        "Viewing Angle",
+        getSpec(
+          "Viewing Angle",
+          "Visual Viewing Angle (H x V)"
+        )
+      ],
       ["Brightness Uniformity", specs["Brightness Uniformity"] ?? (product.applicationType === "Outdoor" ? "98%" : "-")],
       ["Color Uniformity", specs["Color Uniformity"] ?? "±0.003"],
       ["Contrast Ratio", specs["Contrast Ratio"]],
-      ["Processing Depth", specs["Processing Depth"]],
+      [
+        "Processing Depth",
+        getSpec(
+          "Processing Depth",
+          "Processing Depth (bit)"
+        )
+      ],
     ],
     "left"
   );
@@ -199,26 +224,65 @@ export const drawProductSpecsPage = async (
     [
       ["Power Consumption Max", getSpec("Power Consumption Max", "Power Consumption (Max)")],
       ["Power Consumption Average", getSpec("Power Consumption Average", "Power Consumption (Average)")],
-      ["Power Supply", specs["Power Supply"]],
-      ["Frame Rate", specs["Frame Rate"]],
-      ["Refresh Rate", specs["Refresh Rate"]],
+      [
+        "Power Supply",
+        getSpec(
+          "Power Supply",
+          "Power Supply (V)"
+        )
+      ],
+      [
+        "Frame Rate",
+        getSpec(
+          "Frame Rate",
+          "Frame Rate (Hz)"
+        )
+      ],
+      [
+        "Refresh Rate",
+        getSpec(
+          "Refresh Rate",
+          "Refresh Rate (Hz)"
+        )
+      ],
     ],
     "right"
   );
 
   drawSection(
-    "OPERATION",
+  "OPERATION",
+  [
     [
-      ["LED Lifetime", "100,000 Hours"],
-      ["Application", application],
+      "LED Lifetime",
+      getSpec(
+        "LED Lifetime",
+        "LED Lifetime (Half Brightness)"
+      )
     ],
-    "right"
-  );
+    ["Application", application],
+  ],
+  "right"
+);
+console.log(
+  "LED:",
+  JSON.stringify(
+    getSpec(
+      "LED Lifetime",
+      "LED Lifetime (Half Brightness)"
+    )
+  )
+);
 
   drawSection(
     "ENVIRONMENT",
     [
-      ["Operating Temp.", specs["Operating Temperature"]],
+      [
+        "Operating Temp.",
+        getSpec(
+          "Operating Temperature",
+          "Operating Temperature (°C)"
+        )
+      ],
       ["Operating Humidity", specs["Operating Humidity"]],
       ["IP Rating", specs["IP Rating"]],
     ],

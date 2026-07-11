@@ -20,9 +20,17 @@ export const SeriesRepository = {
       throw error;
     }
 
-    return data?.find(
+    const series = data?.find(
       (s) => s.code === code
     );
+
+    if (!series) {
+      throw new Error(
+        `Series '${code}' not found in the series table.`
+      );
+    }
+
+    return series;
   },
 
   async getAll() {
