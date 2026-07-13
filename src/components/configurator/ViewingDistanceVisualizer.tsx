@@ -25,14 +25,21 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
     const displayHeightValue = actualHeight || 14.85;
 
     const cardStyle: React.CSSProperties = {
-        background: "#ffffff",
-        borderRadius: 14,
-        padding: 24, 
-        marginTop: 24,
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
-        border: "1px solid #e5e7eb",
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
-    };
+    background: "#ffffff",
+    borderRadius: 14,
+    padding: 24,
+    marginTop: 24,
+
+    width: "100%",
+    maxWidth: 760,
+    marginLeft: "auto",
+    marginRight: "auto",
+
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
+    border: "1px solid #e5e7eb",
+    fontFamily:
+        'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+};
 
     return (
         <div style={cardStyle}>
