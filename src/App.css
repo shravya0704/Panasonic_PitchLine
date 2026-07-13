@@ -517,6 +517,34 @@ body {
   .metrics-row-grid.physical-six-columns {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* ---------- Responsive Header ---------- */
+
+.app-header {
+  padding: 12px 16px;
+}
+
+.app-header-left {
+  width: 100%;
+  justify-content: center;
+  gap: 14px;
+}
+
+.company-logo {
+  width: 100px;
+}
+
+.app-header-content {
+  padding-left: 14px;
+}
+
+.app-header-content h1 {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.app-header-content p {
+  font-size: 11px;
+}
 }
 
 @media (max-width: 480px) {
@@ -524,6 +552,31 @@ body {
   .metrics-row-grid.physical-six-columns {
     grid-template-columns: 1fr;
   }
+  /* ---------- Small Phones ---------- */
+
+.app-header {
+  padding: 10px 12px;
+}
+
+.app-header-left {
+  gap: 10px;
+}
+
+.company-logo {
+  width: 84px;
+}
+
+.app-header-content {
+  padding-left: 10px;
+}
+
+.app-header-content h1 {
+  font-size: 16px;
+}
+
+.app-header-content p {
+  font-size: 10px;
+}
 }
 /* ==========================================================================
    9. INTERACTION BUTTONS & EXPORT ACTIONS
