@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Product, ProductSpecification } from "../../types/Product";
 import AdminButton from "./ui/AdminButton";
+import { SeriesService } from "../../services/seriesService";
 
 interface Props {
   product?: Product;
@@ -53,6 +54,21 @@ export default function ProductForm({
     operatingTemp: getSpec("Operating Temperature (°C)") || "-10~40",
     operatingHumidity: getSpec("Operating Humidity") || "10%~80%",
   });
+
+  const [series, setSeries] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadSeries = async () => {
+      try {
+        const data = await SeriesService.getAllSeries();
+        setSeries(data);
+      } catch (error) {
+        console.error("Failed to load series:", error);
+      }
+    };
+
+    loadSeries();
+  }, []);
 
   const update = (field: string, value: any) => {
     setForm({
@@ -143,10 +159,17 @@ export default function ProductForm({
         </Field>
 
         <Field label="Series">
-          <input
+          <select
             value={form.seriesCode}
             onChange={(e) => update("seriesCode", e.target.value)}
-          />
+          >
+            <option value="">Select Series</option>
+            {series.map((item) => (
+              <option key={item.id} value={item.code}>
+                {item.code}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <div style={{ gridColumn: "1 / -1" }}>
@@ -263,7 +286,7 @@ export default function ProductForm({
       </div>
 
       {/* CONDITIONAL SPECS SECTION */}
-      {((form.brightness > 1000) || form.applicationType === "Outdoor" || form.applicationType === "Indoor (curve display)") && (
+      {((form.brightness > 1000) || form.applicationType === "Outdoor" || form.applicationType === "Indoor (Curve Display)") && (
         <>
           <h3 style={{ marginTop: 25, marginBottom: 15, color: "#334155" }}>Specialty Specifications</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px", padding: "15px", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "8px" }}>
@@ -290,7 +313,7 @@ export default function ProductForm({
               </Field>
             )}
 
-            {form.applicationType === "Indoor (curve display)" && (
+            {form.applicationType === "Indoor (Curve Display)" && (
               <Field label="Curve Radius">
                 <input
                   type="text"
@@ -361,7 +384,6 @@ export default function ProductForm({
   );
 }
 
-// Re-using your exact Field component
 function Field({
   label,
   children,

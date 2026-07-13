@@ -39,18 +39,14 @@ export default function ProductsPage() {
         }}
       >
         <div>
-          <h2 style={{ marginBottom: 4 }}>
-        
-          </h2>
+          <h2 style={{ marginBottom: 4 }}></h2>
 
           <p
             style={{
               margin: 0,
               color: "#666",
             }}
-          >
-            
-          </p>
+          ></p>
         </div>
 
         <AdminButton

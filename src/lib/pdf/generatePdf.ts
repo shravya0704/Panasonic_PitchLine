@@ -10,6 +10,8 @@ import { drawViewingDistancePage } from "./drawViewingDistancePage";
 import { drawProductSpecsPage } from "./drawProductSpecsPage";
 import { drawPowerDiagramPage } from "./drawPowerDiagramPage";
 import { drawDataDiagramPage } from "./drawDataDiagramPage";
+import { drawCurvePowerInfoPage } from "./drawCurvePowerInfoPage";
+import { drawCurveDataInfoPage } from "./drawCurveDataInfoPage";
 import { calculatePowerFlow } from "../calculations/calculatePowerFlow";
 import { assignPowerChains } from "../calculations/assignPowerChains";
 import { POWER_RULES } from "../rules/PowerRules";
@@ -98,34 +100,39 @@ export const generatePdf = async (
   );
 
   // Page 5: Product Specifications
-  doc.addPage();
-  await drawProductSpecsPage(doc, product);
+// Page 6: Power Diagram Page
+doc.addPage();
 
-  // Page 6: Power Diagram Page
-  doc.addPage();
-  // We calculate the power flow dynamically right before drawing the page. 
-  // This abstracts the heavy math out of the drawing function, keeping the PDF builders strictly focused on layout.
-  // Select the appropriate engineering limit based on the installation environment.
-const maxCabinetsPerChain =
-  product.applicationType === "Outdoor"
-    ? POWER_RULES.outdoor.maxCabinetsPerChain
-    : POWER_RULES.indoor.maxCabinetsPerChain;
+if (product.applicationType === "Indoor (Curve Display)") {
+  drawCurvePowerInfoPage(doc);
+} else {
+  const maxCabinetsPerChain =
+    product.applicationType === "Outdoor"
+      ? POWER_RULES.outdoor.maxCabinetsPerChain
+      : POWER_RULES.indoor.maxCabinetsPerChain;
 
-// Calculate the power distribution using the correct engineering rule.
-const powerFlow = calculatePowerFlow(
-  result.cabinetsH,
-  maxCabinetsPerChain
-);
+  const powerFlow = calculatePowerFlow(
+    result.cabinetsH,
+    maxCabinetsPerChain
+  );
+
   const assignmentGrid = assignPowerChains(
     result.cabinetsW,
     result.cabinetsH,
     powerFlow.distribution
   );
+
   drawPowerDiagramPage(doc, result, assignmentGrid);
+}
 
   // Page 7: Data Diagram Page
-  doc.addPage();
+doc.addPage();
+
+if (product.applicationType === "Indoor (Curve Display)") {
+  drawCurveDataInfoPage(doc);
+} else {
   drawDataDiagramPage(doc, product, result);
+}
 
   // Append Brochure context pages at the very end
   addBrochurePages(doc, brochure);
