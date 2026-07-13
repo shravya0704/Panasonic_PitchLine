@@ -239,39 +239,36 @@ function ConfiguratorPage() {
                                         Export PDF
                                     </button>
                                 </div>
+
+                                <div
+                                    ref={viewingDistanceRef}
+                                    style={{
+                                        width: "100%",
+                                        display: "flex",
+                                        justifyContent: "center",
+                                        marginTop: "2rem",
+                                        marginBottom: "2rem",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: "100%",
+                                            maxWidth: "760px",
+                                        }}
+                                    >
+                                        <ViewingDistanceVisualizer
+                                            pixelPitch={selectedProduct.pitch}
+                                            actualWidth={result.actualWidth}
+                                            actualHeight={result.actualHeight}
+                                        />
+                                    </div>
+                                </div>
                             </>
                         ) : (
                             <div>Screen preview will appear here after calculation.</div>
                         )}
                     </div>
                 </div>
-
-                {result && selectedProduct && (
-                    <div
-                        ref={viewingDistanceRef}
-                        style={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            marginTop: "2rem",
-                            marginBottom: "2rem",
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: "100%",
-                                maxWidth: "760px",
-                            }}
-                        >
-                            <ViewingDistanceVisualizer
-                                pixelPitch={selectedProduct.pitch}
-                                actualWidth={result.actualWidth}
-                                actualHeight={result.actualHeight}
-                            />
-                        </div>
-                    </div>
-                )}
             </main>
 
             {showExportModal && (
