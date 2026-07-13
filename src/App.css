@@ -985,13 +985,7 @@ input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
-.analysis-footer {
-    width: 100%;
-    display: flex;
-    justify-content: center; /* This centers the visualizer */
-    margin-top: 2rem;
-    padding-bottom: 2rem;
-}
+
 .preview-viewport-container {
     position: absolute;
     border: 1px solid #CBD5E1;

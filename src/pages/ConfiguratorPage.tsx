@@ -41,7 +41,7 @@ function ConfiguratorPage() {
 
     // Unit measurement state (mtr or ft)
     const [unit, setUnit] = useState<"mtr" | "ft">("mtr");
-    
+
     // ADDED: Target resolution state
     const [targetResolution, setTargetResolution] = useState<"None" | "HD" | "FHD" | "UHD">("None");
 
@@ -57,7 +57,7 @@ function ConfiguratorPage() {
     const [width, setWidth] = useState<number>(0);
     const [height, setHeight] = useState<number>(0);
     const [result, setResult] = useState<ConfigurationResult | null>(null);
-    
+
     // Ref used to capture the DOM node of the screen preview for the PDF export screenshot.
     const screenPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -122,7 +122,7 @@ function ConfiguratorPage() {
         try {
             let imageData: string | undefined;
             let viewingDistanceImage: string | undefined;
-            
+
             // We use html2canvas to take a literal "screenshot" of the React DOM element.
             // Using { scale: 2 } forces a higher resolution capture (Retina-like quality), 
             // preventing the UI mockup from looking blurry or pixelated when printed in the final PDF.
@@ -140,15 +140,15 @@ function ConfiguratorPage() {
 
                 viewingDistanceImage = canvas.toDataURL("image/png");
             }
-            
+
             const proposalId = generateProposalId();
-            
+
             // If user data was provided, we save the lead to Supabase *before* building the PDF.
             // This ensures marketing/sales captures the data even if the client's PDF download gets interrupted.
             if (proposalData) {
                 await ProposalService.createProposal({ ...proposalData, proposalId }, selectedProduct, result, width, height);
             }
-            
+
             // FIXED: 'unit' is now passed at the very end of this call
             const typedGeneratePdf = generatePdf as (
                 product: Product,
@@ -248,14 +248,28 @@ function ConfiguratorPage() {
 
                 {result && selectedProduct && (
                     <div
-                        className="analysis-footer"
                         ref={viewingDistanceRef}
+                        style={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            marginTop: "2rem",
+                            marginBottom: "2rem",
+                        }}
                     >
-                        <ViewingDistanceVisualizer
-                            pixelPitch={selectedProduct.pitch}
-                            actualWidth={result.actualWidth}
-                            actualHeight={result.actualHeight}
-                        />
+                        <div
+                            style={{
+                                width: "100%",
+                                maxWidth: "760px",
+                            }}
+                        >
+                            <ViewingDistanceVisualizer
+                                pixelPitch={selectedProduct.pitch}
+                                actualWidth={result.actualWidth}
+                                actualHeight={result.actualHeight}
+                            />
+                        </div>
                     </div>
                 )}
             </main>
