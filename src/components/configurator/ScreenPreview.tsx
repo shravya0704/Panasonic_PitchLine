@@ -21,7 +21,6 @@ interface ScreenPreviewProps {
   } | null;
   contentType: "sample" | "video" | "upload" | "none";
   unit: "mtr" | "ft";
-  // ADDED: Target Resolution Tracking
   targetResolution?: "None" | "HD" | "FHD" | "UHD";
 }
 
@@ -49,10 +48,29 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const scale = Math.min(MAX_PREVIEW_WIDTH / safeWidth, MAX_PREVIEW_HEIGHT / safeHeight);
     const screenWidthPx = safeWidth * scale;
     const screenHeightPx = safeHeight * scale;
+    
+    // Change 1: Responsive scale implementation using calculated dimensions
+    // ======================================================
+    // RESPONSIVE PREVIEW SCALE
+    // Scales the complete engineering preview on smaller
+    // screens while keeping the desktop layout unchanged.
+    // ======================================================
     const marginLeft = 80;
     const marginRight = 210;
     const marginTop = 70;
     const marginBottom = 80;
+
+    const desktopPreviewWidth = screenWidthPx + marginLeft + marginRight;
+
+    const viewportWidth =
+      typeof window !== "undefined"
+        ? window.innerWidth
+        : desktopPreviewWidth;
+
+    const responsiveScale = Math.min(
+      1,
+      (viewportWidth - 40) / desktopPreviewWidth
+    );
 
     const baseViewingDistance = pixelPitch !== undefined ? pixelPitch * 1.5 : null;
     const viewingDistance = baseViewingDistance !== null
@@ -66,34 +84,29 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
 
     // ==========================================
     // CURVED DISPLAY DETECTION
-    // PIS-C series uses a fixed preview curvature (R211).
-    // This is purely visual and does not affect engineering calculations.
     // ==========================================
-    const isCurved =
-      model?.toUpperCase().includes("PIS-C") ?? false;
-      // Route curved LED models to the dedicated curved preview.
-// This keeps the existing flat preview completely untouched.
-if (isCurved) {
-  return (
-    <CurvedScreenPreview
-      ref={ref}
-      width={width}
-      height={height}
-      resolutionW={resolutionW}
-      resolutionH={resolutionH}
-      cabinetsW={cabinetsW}
-      cabinetsH={cabinetsH}
-      model={model}
-      brightness={brightness}
-      pixelPitch={pixelPitch}
-      uploadedImage={uploadedImage}
-      result={result}
-      contentType={contentType}
-      unit={unit}
-      targetResolution={targetResolution}
-    />
-  );
-}
+    const isCurved = model?.toUpperCase().includes("PIS-C") ?? false;
+    if (isCurved) {
+      return (
+        <CurvedScreenPreview
+          ref={ref}
+          width={width}
+          height={height}
+          resolutionW={resolutionW}
+          resolutionH={resolutionH}
+          cabinetsW={cabinetsW}
+          cabinetsH={cabinetsH}
+          model={model}
+          brightness={brightness}
+          pixelPitch={pixelPitch}
+          uploadedImage={uploadedImage}
+          result={result}
+          contentType={contentType}
+          unit={unit}
+          targetResolution={targetResolution}
+        />
+      );
+    }
 
     // ==========================================
     // RESOLUTION OVERLAY CALCULATIONS
@@ -102,24 +115,17 @@ if (isCurved) {
     let resolutionWarning = null;
 
     if (targetResolution !== "None" && resolutionW > 0 && resolutionH > 0) {
-      const target =
-  STANDARD_RESOLUTIONS[
-    targetResolution as keyof typeof STANDARD_RESOLUTIONS
-  ];
+      const target = STANDARD_RESOLUTIONS[targetResolution as keyof typeof STANDARD_RESOLUTIONS];
 
-      // OPTION B: Check if the screen is too small
       if (resolutionW < target.w || resolutionH < target.h) {
         resolutionWarning = `Screen too small for native ${targetResolution}`;
       } else {
-        // Calculate how many boxes fit
         const cols = Math.floor(resolutionW / target.w);
         const rows = Math.floor(resolutionH / target.h);
 
-        // Calculate leftover pixels to center the boxes
         const offsetX = (resolutionW - (cols * target.w)) / 2;
         const offsetY = (resolutionH - (rows * target.h)) / 2;
 
-        // Convert to percentages for responsive CSS positioning
         const boxW = (target.w / resolutionW) * 100;
         const boxH = (target.h / resolutionH) * 100;
         const startX = (offsetX / resolutionW) * 100;
@@ -146,8 +152,34 @@ if (isCurved) {
           {model && <div className="preview-model-badge">{model}</div>}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: "20px" }}>
-          <div style={{ position: "relative", width: screenWidthPx + marginLeft + marginRight, height: screenHeightPx + marginTop + marginBottom, background: "#F8FAFC" }}>
+        {/* Change 2: Outer wrapper tailored for responsive scaling without flex clipping */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            overflowX: "hidden",
+            width: "100%",
+          }}
+        >
+          {/* Change 3: Scaled responsive container element */}
+          <div
+            style={{
+              position: "relative",
+              width: screenWidthPx + marginLeft + marginRight,
+              height: screenHeightPx + marginTop + marginBottom,
+              background: "#F8FAFC",
+
+              transform: `scale(${responsiveScale})`,
+              transformOrigin: "top center",
+
+              marginBottom:
+                -(screenHeightPx + marginTop + marginBottom) *
+                (1 - responsiveScale),
+
+              transition: "transform .2s ease",
+            }}
+          >
 
             {/* Top Engineering Label */}
             <div style={{ position: "absolute", top: 15, left: `${marginLeft + screenWidthPx / 2}px`, transform: "translateX(-50%)", fontWeight: 600, fontSize: "16px", background: "#FFFFFF", padding: "4px 10px", borderRadius: "8px", border: "1px solid #E2E8F0", zIndex: 10 }}>{displayWidthText} {unit}</div>
@@ -162,15 +194,9 @@ if (isCurved) {
               left: marginLeft,
               width: screenWidthPx,
               height: screenHeightPx,
-
               border: "1px solid #CBD5E1",
-
               overflow: "hidden",
-
-              backgroundColor:
-                contentType === "none" ? "#0043A4" : "#F8FAFC",
-
-              
+              backgroundColor: contentType === "none" ? "#0043A4" : "#F8FAFC",
             }}>
 
               {/* CONTENT LAYER */}
@@ -194,18 +220,9 @@ if (isCurved) {
                     overflow: "visible",
                   }}
                 >
-                  {/* Curved outline */}
                   {isCurved && (
                     <path
-                      d="
-      M 2 20
-      Q 18 2 50 2
-      L 98 2
-      Q 82 50 98 98
-      L 50 98
-      Q 18 98 2 80
-      Q 8 50 2 20
-    "
+                      d="M 2 20 Q 18 2 50 2 L 98 2 Q 82 50 98 98 L 50 98 Q 18 98 2 80 Q 8 50 2 20"
                       fill="none"
                       stroke="rgba(255,255,255,.55)"
                       strokeWidth="1.8"
@@ -213,7 +230,6 @@ if (isCurved) {
                     />
                   )}
 
-                  {/* Existing engineering diagonal */}
                   <line
                     x1="4%"
                     y1="4%"
@@ -236,9 +252,7 @@ if (isCurved) {
                     transform: "translate(-50%, -50%)",
                     background: "rgba(255,255,255,0.92)",
                     border: "1px solid #CBD5E1",
-
                     borderRadius: isCurved ? "90px / 18px" : "0px",
-
                     padding: "3px 10px",
                     fontSize: 12,
                     fontWeight: 700,
@@ -260,10 +274,6 @@ if (isCurved) {
                 <div key={`h-${i}`} style={{ position: "absolute", top: `${((i + 1) * 100) / (cabinetsH || 1)}%`, left: 0, right: 0, borderTop: "1px solid rgba(255, 255, 255, 0.6)" }} />
               ))}
 
-              {/* ========================================== */}
-              {/* TARGET RESOLUTION RED BOXES OVERLAY        */}
-              {/* ========================================== */}
-
               {/* Small Screen Warning overlay */}
               {resolutionWarning && (
                 <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(15, 23, 42, 0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5 }}>
@@ -281,11 +291,10 @@ if (isCurved) {
                   left: `${box.left}%`,
                   width: `${box.width}%`,
                   height: `${box.height}%`,
-                  border: "2px solid #EF4444", // Red border mimicking LG
-                  boxSizing: "border-box", // Ensures borders don't misalign the math
+                  border: "2px solid #EF4444",
+                  boxSizing: "border-box",
                   zIndex: 4
                 }}>
-                  {/* Top Left Red Badge */}
                   <div style={{
                     position: "absolute",
                     top: 0,
@@ -306,7 +315,6 @@ if (isCurved) {
             <div style={{
               position: "absolute",
               top: 28,
-              // Anchor to the right of the screen instead of the right of the container
               left: marginLeft + screenWidthPx + 20,
               background: "#FFFFFF",
               border: "1px solid #D6DEE8",
@@ -328,7 +336,6 @@ if (isCurved) {
               alt="Human Scale"
               style={{
                 position: "absolute",
-                // Anchor to the right of the screen
                 left: marginLeft + screenWidthPx + 40,
                 bottom: marginBottom,
                 height: Math.min(screenHeightPx * 0.42, 125),
@@ -337,7 +344,6 @@ if (isCurved) {
             />
             <div style={{
               position: "absolute",
-              // Align text perfectly under the newly anchored human
               left: marginLeft + screenWidthPx + 5,
               bottom: marginBottom - 34,
               width: 120,
