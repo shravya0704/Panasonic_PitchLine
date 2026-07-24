@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import DashboardSidebar from "../components/admin/DashboardSidebar";
 import ProductsPage from "../components/admin/ProductsPage";
 import ProposalLeadsPage from "../components/admin/ProposalLeadsPage";
-
 import SettingsPage from "../components/admin/SettingsPage";
+import AdminSeriesManagement from "../components/admin/AdminSeriesManagement";  // ← ADD THIS
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -21,6 +21,9 @@ export default function AdminDashboard() {
     switch (selectedPage) {
       case "Products":
         return <ProductsPage />;
+
+      case "Series":  // ← ADD THIS
+        return <AdminSeriesManagement />;
 
       case "Leads":
         return <ProposalLeadsPage />;

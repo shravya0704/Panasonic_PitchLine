@@ -28,6 +28,11 @@ import { panasonicLogoBase64 } from "../../assets/logoBase64";
  * It linearly constructs the document page by page, integrating dynamic configuration 
  * data, visual previews, complex engineering diagrams, and static marketing assets.
  *
+ * PHASE 5 UPDATE:
+ * - Page 1 now uses EDM image (from brochure.coverImage, which is series.edm_image_url)
+ * - Remaining pages follow as before
+ * - Brochure pages are appended at the end after all engineering pages
+ *
  * @param {Product} product - The configured LED product model.
  * @param {ConfigurationResult} result - The mathematical and physical output from the configuration engine.
  * @param {number} width - The requested screen width.
@@ -64,7 +69,7 @@ export const generatePdf = async (
 
   const brochure = await getBrochureForSeries(product.seriesCode);
 
-  // Page 1: Cover Page
+  // Page 1: EDM Cover Page (from series.edm_image_url)
   drawMarketingCoverPage(doc, brochure.coverImage);
 
   // Page 2: Proposal Summary
@@ -100,41 +105,41 @@ export const generatePdf = async (
   );
 
   // Page 5: Product Specifications
-// Page 6: Power Diagram Page
-doc.addPage();
+  // Page 6: Power Diagram Page
+  doc.addPage();
 
-if (product.applicationType === "Indoor (Curve Display)") {
-  drawCurvePowerInfoPage(doc);
-} else {
-  const maxCabinetsPerChain =
-    product.applicationType === "Outdoor"
-      ? POWER_RULES.outdoor.maxCabinetsPerChain
-      : POWER_RULES.indoor.maxCabinetsPerChain;
+  if (product.applicationType === "Indoor (Curve Display)") {
+    drawCurvePowerInfoPage(doc);
+  } else {
+    const maxCabinetsPerChain =
+      product.applicationType === "Outdoor"
+        ? POWER_RULES.outdoor.maxCabinetsPerChain
+        : POWER_RULES.indoor.maxCabinetsPerChain;
 
-  const powerFlow = calculatePowerFlow(
-    result.cabinetsH,
-    maxCabinetsPerChain
-  );
+    const powerFlow = calculatePowerFlow(
+      result.cabinetsH,
+      maxCabinetsPerChain
+    );
 
-  const assignmentGrid = assignPowerChains(
-    result.cabinetsW,
-    result.cabinetsH,
-    powerFlow.distribution
-  );
+    const assignmentGrid = assignPowerChains(
+      result.cabinetsW,
+      result.cabinetsH,
+      powerFlow.distribution
+    );
 
-  drawPowerDiagramPage(doc, result, assignmentGrid);
-}
+    drawPowerDiagramPage(doc, result, assignmentGrid);
+  }
 
   // Page 7: Data Diagram Page
-doc.addPage();
+  doc.addPage();
 
-if (product.applicationType === "Indoor (Curve Display)") {
-  drawCurveDataInfoPage(doc);
-} else {
-  drawDataDiagramPage(doc, product, result);
-}
+  if (product.applicationType === "Indoor (Curve Display)") {
+    drawCurveDataInfoPage(doc);
+  } else {
+    drawDataDiagramPage(doc, product, result);
+  }
 
-  // Append Brochure context pages at the very end
+  // Append Brochure pages at the very end
   addBrochurePages(doc, brochure);
 
   // Stamp Document Footers across pages sequentially
@@ -143,7 +148,7 @@ if (product.applicationType === "Indoor (Curve Display)") {
     console.log("TOTAL PDF PAGES:", totalPages);
 
     // WHY LOOP FROM 2 TO 8?
-    // We start at i=2 because Page 1 is a full-bleed marketing cover (we don't want a footer ruining the graphic).
+    // We start at i=2 because Page 1 is a full-bleed EDM cover (we don't want a footer ruining the graphic).
     // We cap it at i<=8 to apply footers only to the core engineering pages. 
     // We intentionally stop before the appended brochure pages, as marketing assets already have their own design layouts.
     // Pass the base64 string directly to the template

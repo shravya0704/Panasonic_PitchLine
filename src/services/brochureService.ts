@@ -1,27 +1,32 @@
-import { SeriesService } from "./seriesService";
-import { BrochureRepository } from "../repositories/BrochureRepository";
+import { SeriesAdminRepository } from "../repositories/SeriesAdminRepository";
+import { BrochureUploadRepository } from "../repositories/BrochureUploadRepository";
 
-export const getBrochureForSeries =
-  async (
-    seriesCode: string
-  ) => {
-    const series =
-      await SeriesService.getSeries(
-        seriesCode
-      );
+/**
+ * getBrochureForSeries
+ * Fetches series EDM image and brochure pages for a given series code
+ * Returns EDM image as coverImage and brochure pages as an array
+ * 
+ * @param seriesCode - The series code (e.g., "PFP", "PIK")
+ * @returns Object with coverImage (EDM URL) and brochurePages (array of image URLs)
+ */
+export const getBrochureForSeries = async (
+  seriesCode: string
+) => {
+  // Get series by code to retrieve EDM image URL
+  const series = await SeriesAdminRepository.getSeriesByCode(seriesCode);
 
-    const pages =
-      await BrochureRepository.getPages(
-        seriesCode
-      );
+  if (!series) {
+    throw new Error(`Series not found: ${seriesCode}`);
+  }
 
-    return {
-      coverImage:
-        series.cover_image,
+  // Get brochure pages for this series
+  const pages = await BrochureUploadRepository.getPagesBySeries(seriesCode);
 
-      brochurePages:
-        pages.map(
-          (page) => page.image_url
-        ),
-    };
+  return {
+    // EDM image becomes the cover image for the PDF
+    coverImage: series.edm_image_url,
+
+    // Map pages to just the image URLs
+    brochurePages: pages.map((page) => page.image_url),
   };
+};

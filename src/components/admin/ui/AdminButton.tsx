@@ -1,42 +1,43 @@
 interface Props {
-    children: React.ReactNode;
-    onClick?: () => void;
-    type?: "primary" | "secondary" | "danger";
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: "primary" | "secondary" | "danger";
 }
 
 export default function AdminButton({
-    children,
-    onClick,
-    type = "primary",
+  children,
+  onClick,
+  type = "primary",
 }: Props) {
+  const colors = {
+    primary: "#005BAC",
+    secondary: "#E9EEF5",
+    danger: "#D32F2F",
+  };
 
-    const colors = {
-        primary: "#005BAC",
-        secondary: "#E9EEF5",
-        danger: "#D32F2F",
-    };
+  const text = {
+    primary: "#fff",
+    secondary: "#222",
+    danger: "#fff",
+  };
 
-    const text = {
-        primary: "#fff",
-        secondary: "#222",
-        danger: "#fff",
-    };
-
-    return (
-        <button
-            onClick={onClick}
-            style={{
-                padding: "9px 18px",
-                borderRadius: 8,
-                border: "none",
-                fontWeight: 600,
-                fontSize: 14,
-                cursor: "pointer",
-                transition: "0.2s",
-                minWidth: 80,
-            }}
-        >
-            {children}
-        </button>
-    );
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: "9px 18px",
+        borderRadius: 8,
+        border: "none",
+        fontWeight: 600,
+        fontSize: 14,
+        cursor: "pointer",
+        transition: "0.2s",
+        minWidth: 80,
+        background: colors[type],
+        color: text[type],
+      }}
+    >
+      {children}
+    </button>
+  );
 }

@@ -11,6 +11,7 @@ export default function DashboardSidebar({
 }: DashboardSidebarProps) {
   const items = [
     "Products",
+    "Series",
     "Leads",
     "Settings",
   ];
