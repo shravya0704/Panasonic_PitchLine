@@ -1,7 +1,6 @@
-// src/repositories/ProductRepository.ts
-
 import { supabase } from "../lib/supabase";
-import { Product } from "../types/Product";
+import { Product, ProductSpecification } from "../types/Product";
+import { ProductSpecificationRepository } from "./ProductSpecificationRepository";
 
 export const ProductRepository = {
   async getAll(): Promise<Product[]> {
@@ -64,9 +63,10 @@ export const ProductRepository = {
     };
   },
 
-  // Note: create, update, and delete methods remain UNCHANGED
+  // 💡 ATOMIC CREATE: Save both products table AND product_specifications in one go
   async create(product: Product) {
-    const { error } = await supabase
+    // Step 1: Insert into products table
+    const { data: insertedProduct, error: productError } = await supabase
       .from("products")
       .insert({
         series_code: product.seriesCode,
@@ -81,13 +81,28 @@ export const ProductRepository = {
         cabinet_resolution_w: product.cabinetResolutionW,
         cabinet_resolution_h: product.cabinetResolutionH,
         modules_per_cabinet: product.modulesPerCabinet,
-      });
+      })
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (productError) throw productError;
+
+    // Step 2: If specs exist, insert them linked by model name
+    if (product.product_specifications && product.product_specifications.length > 0) {
+      await ProductSpecificationRepository.createBatch(
+        product.model,
+        product.product_specifications.map((spec) => ({
+          name: spec.specification_name,
+          value: spec.specification_value,
+        }))
+      );
+    }
   },
 
+  // 💡 ATOMIC UPDATE: Update products table AND sync product_specifications
   async update(product: Product) {
-    const { error } = await supabase
+    // Step 1: Update products table
+    const { error: productError } = await supabase
       .from("products")
       .update({
         series_code: product.seriesCode,
@@ -105,7 +120,22 @@ export const ProductRepository = {
       })
       .eq("id", product.id);
 
-    if (error) throw error;
+    if (productError) throw productError;
+
+    // Step 2: Delete existing specs for this model and re-insert new ones
+    if (product.product_specifications && product.product_specifications.length > 0) {
+      // Delete old specs for this model
+      await ProductSpecificationRepository.deleteByModel(product.model);
+
+      // Insert new specs
+      await ProductSpecificationRepository.createBatch(
+        product.model,
+        product.product_specifications.map((spec) => ({
+          name: spec.specification_name,
+          value: spec.specification_value,
+        }))
+      );
+    }
   },
 
   async delete(id: string) {
