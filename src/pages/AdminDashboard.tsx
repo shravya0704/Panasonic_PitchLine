@@ -1,19 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
 
 import DashboardSidebar from "../components/admin/DashboardSidebar";
 import ProductsPage from "../components/admin/ProductsPage";
 import ProposalLeadsPage from "../components/admin/ProposalLeadsPage";
 import SettingsPage from "../components/admin/SettingsPage";
-import AdminSeriesManagement from "../components/admin/AdminSeriesManagement";  // ← ADD THIS
+import AdminSeriesManagement from "../components/admin/AdminSeriesManagement";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [selectedPage, setSelectedPage] = useState("Products");
 
-  const logout = () => {
-    sessionStorage.removeItem("adminLoggedIn");
+  const logout = async () => {
+    await supabase.auth.signOut();
     navigate("/admin");
   };
 
@@ -22,7 +23,7 @@ export default function AdminDashboard() {
       case "Products":
         return <ProductsPage />;
 
-      case "Series":  // ← ADD THIS
+      case "Series":
         return <AdminSeriesManagement />;
 
       case "Leads":

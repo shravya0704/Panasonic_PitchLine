@@ -33,6 +33,11 @@ import { panasonicLogoBase64 } from "../../assets/logoBase64";
  * - Remaining pages follow as before
  * - Brochure pages are appended at the end after all engineering pages
  *
+ * PRIORITY 1 FIX (July 26, 2026):
+ * - RESTORED: drawProductSpecsPage() call at Page 5
+ * - This was accidentally removed during a refactor
+ * - Function now properly invoked with correct parameters
+ *
  * @param {Product} product - The configured LED product model.
  * @param {ConfigurationResult} result - The mathematical and physical output from the configuration engine.
  * @param {number} width - The requested screen width.
@@ -105,6 +110,10 @@ export const generatePdf = async (
   );
 
   // Page 5: Product Specifications
+  // PRIORITY 1 FIX: This function call was missing (accidental deletion during refactor)
+  doc.addPage();
+  await drawProductSpecsPage(doc, product);
+
   // Page 6: Power Diagram Page
   doc.addPage();
 
@@ -147,12 +156,18 @@ export const generatePdf = async (
     const totalPages = doc.getNumberOfPages();
     console.log("TOTAL PDF PAGES:", totalPages);
 
-    // WHY LOOP FROM 2 TO 8?
+    // WHY LOOP FROM 2 TO 7?
     // We start at i=2 because Page 1 is a full-bleed EDM cover (we don't want a footer ruining the graphic).
-    // We cap it at i<=8 to apply footers only to the core engineering pages. 
-    // We intentionally stop before the appended brochure pages, as marketing assets already have their own design layouts.
+    // We cap it at i<=7 to apply footers ONLY to the core engineering pages:
+    //   - Page 2: Proposal Summary
+    //   - Page 3: Screen Configuration
+    //   - Page 4: Viewing Distance
+    //   - Page 5: Product Specifications
+    //   - Page 6: Power Diagram
+    //   - Page 7: Data Diagram
+    // Page 8 onwards are brochure pages (cover + interior), which have their own design layouts.
     // Pass the base64 string directly to the template
-    for (let i = 2; i <= 8; i++) {
+    for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(
         doc,

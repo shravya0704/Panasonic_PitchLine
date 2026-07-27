@@ -61,21 +61,23 @@ export const BrochureUploadRepository = {
    * Batch inserts multiple pages at once
    * @param seriesBrochureId - The series_brochures ID
    * @param seriesId - The series ID
+   * @param seriesCode - The series code (e.g., "PIT", "PFP") — REQUIRED for retrieval
    * @param pages - Array of page objects with pageNumber and imageUrl
    * @throws Error if insertion fails
    */
   async saveBrochurePages(
     seriesBrochureId: string,
     seriesId: string,
+    seriesCode: string,
     pages: Array<{ pageNumber: number; imageUrl: string }>
   ): Promise<void> {
     // Transform pages into format for brochure_pages table
     const pagesToInsert = pages.map((page) => ({
       series_id: seriesId,
       series_brochure_id: seriesBrochureId,
+      series_code: seriesCode, // ← FIXED: Now explicitly included
       page_number: page.pageNumber,
       image_url: page.imageUrl,
-      // series_code will be set by the UI, not here (easier to get from the series object)
     }));
 
     const { error } = await supabase

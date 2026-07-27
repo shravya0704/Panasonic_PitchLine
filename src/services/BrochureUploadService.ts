@@ -163,9 +163,11 @@ export const BrochureUploadService = {
         imageUrl: imageUrls[index],
       }));
 
+      // FIXED: Now passing seriesCode as required parameter
       await BrochureUploadRepository.saveBrochurePages(
         seriesBrochureId,
         seriesId,
+        seriesCode,
         pagesToSave
       );
 
