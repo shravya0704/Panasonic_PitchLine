@@ -164,38 +164,76 @@ export const SeriesAdminRepository = {
     return data as Series;
   },
 
-  /**
-   * Delete a series (cascades to related records)
-   * @param seriesId - The series UUID
-   */
-  async deleteSeries(seriesId: string): Promise<void> {
-    const { error } = await supabase
+/**
+ * Delete a series and all brochure files from storage
+ * @param seriesId - The series UUID
+ */
+async deleteSeries(seriesId: string): Promise<void> {
+  try {
+    // Get the series code first
+    const { data: series, error: seriesError } = await supabase
+      .from("series")
+      .select("code")
+      .eq("id", seriesId)
+      .single();
+
+    if (seriesError) throw seriesError;
+
+    // Delete everything from storage under this series code folder
+    if (series && series.code) {
+      try {
+        const { data: files } = await supabase.storage
+          .from("brochures")
+          .list(series.code);
+
+        if (files && files.length > 0) {
+          const filePaths = files.map(
+            (f) => `${series.code}/${f.name}`
+          );
+
+          await supabase.storage
+            .from("brochures")
+            .remove(filePaths);
+        }
+      } catch (storageError) {
+        console.error(
+          "Failed to delete storage files:",
+          storageError
+        );
+        // Continue even if storage deletion fails
+      }
+    }
+
+    // Delete the series from the database
+    // Cascade will delete brochure records, products, specs, etc.
+    const { error: deleteError } = await supabase
       .from("series")
       .delete()
       .eq("id", seriesId);
 
-    if (error) {
-      console.error("Error deleting series:", error);
-      throw new Error(`Failed to delete series: ${error.message}`);
-    }
-  },
+    if (deleteError) throw deleteError;
+  } catch (error) {
+    console.error("Error deleting series:", error);
+    throw error;
+  }
+},
 
-  /**
-   * Get the count of models in a series
-   * @param seriesCode - The series code
-   * @returns Number of products in this series
-   */
-  async getModelCountForSeries(seriesCode: string): Promise<number> {
-    const { count, error } = await supabase
-      .from("products")
-      .select("*", { count: "exact" })
-      .eq("series_code", seriesCode);
+/**
+ * Get the count of models in a series
+ * @param seriesCode - The series code
+ * @returns Number of products in this series
+ */
+async getModelCountForSeries(seriesCode: string): Promise<number> {
+  const { count, error } = await supabase
+    .from("products")
+    .select("*", { count: "exact" })
+    .eq("series_code", seriesCode);
 
-    if (error) {
-      console.error("Error counting models:", error);
-      throw new Error(`Failed to count models: ${error.message}`);
-    }
+  if (error) {
+    console.error("Error counting models:", error);
+    throw new Error(`Failed to count models: ${error.message}`);
+  }
 
-    return count || 0;
-  },
+  return count || 0;
+},
 };

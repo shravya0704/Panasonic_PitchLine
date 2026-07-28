@@ -3,9 +3,12 @@ import AdminCard from "./AdminCard";
 import AdminTable from "./AdminTable";
 import AdminButton from "./AdminButton";
 import AddNewSeriesModal from "./AddNewSeriesModal";
-import AddModelForm from "./AddModelForm";
+import QuickAddModelForm from "./QuickAddModelForm";
+import SeriesForm from "./SeriesForm";
+import AdminModal from "./AdminModal";
 import { SeriesAdminRepository } from "../../repositories/SeriesAdminRepository";
 import { BrochureUploadRepository } from "../../repositories/BrochureUploadRepository";
+import { SeriesSpecificationService } from "../../services/Seriesspecificationservice";
 import { Series } from "../../types/SeriesAdmin";
 
 interface SeriesWithDetails extends Series {
@@ -23,6 +26,7 @@ export default function AdminSeriesManagement() {
   const [showModelForm, setShowModelForm] = useState(false);
   const [selectedSeriesCode, setSelectedSeriesCode] = useState("");
   const [selectedSeriesId, setSelectedSeriesId] = useState("");
+  const [seriesHasDefaults, setSeriesHasDefaults] = useState(false);
 
   const loadSeries = async () => {
     setIsLoading(true);
@@ -86,6 +90,24 @@ export default function AdminSeriesManagement() {
       setError(errorMessage);
       console.error("Error deleting series:", err);
     }
+  };
+
+  const handleAddModelClick = async (seriesCode: string, seriesId: string) => {
+    setSelectedSeriesCode(seriesCode);
+    setSelectedSeriesId(seriesId);
+
+    // Check if series has defaults
+    const defaults = await SeriesSpecificationService.getSeriesDefaults(seriesCode);
+    const hasDefaults = defaults !== null;
+    setSeriesHasDefaults(hasDefaults);
+
+    setShowModelForm(true);
+  };
+
+  const handleSeriesSpecsSaved = () => {
+    // After series specs are saved, mark as having defaults and refresh form
+    setSeriesHasDefaults(true);
+    loadSeries();
   };
 
   return (
@@ -353,11 +375,9 @@ export default function AdminSeriesManagement() {
                     }}
                   >
                     <button
-                      onClick={() => {
-                        setSelectedSeriesCode(s.code);
-                        setSelectedSeriesId(s.id);
-                        setShowModelForm(true);
-                      }}
+                      onClick={() =>
+                        handleAddModelClick(s.code, s.id)
+                      }
                       style={{
                         padding: "6px 12px",
                         background: "#005BAC",
@@ -403,11 +423,21 @@ export default function AdminSeriesManagement() {
       )}
 
       {showModelForm && (
-        <AddModelForm
-          seriesCode={selectedSeriesCode}
-          onClose={() => setShowModelForm(false)}
-          onModelAdded={handleModelAdded}
-        />
+        <AdminModal onClose={() => setShowModelForm(false)}>
+          {!seriesHasDefaults ? (
+            <SeriesForm
+              seriesCode={selectedSeriesCode}
+              onSave={handleSeriesSpecsSaved}
+              onCancel={() => setShowModelForm(false)}
+            />
+          ) : (
+            <QuickAddModelForm
+              seriesCode={selectedSeriesCode}
+              onSave={handleModelAdded}
+              onCancel={() => setShowModelForm(false)}
+            />
+          )}
+        </AdminModal>
       )}
     </AdminCard>
   );

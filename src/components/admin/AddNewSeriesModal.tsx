@@ -1,6 +1,8 @@
 import { useState, type ChangeEvent } from "react";
 import AdminModal from "./AdminModal";
 import SeriesAdminService from "../../services/SeriesAdminService";
+import SeriesForm from "./SeriesForm";
+import QuickAddModelForm from "./QuickAddModelForm";
 import type { UploadProgress } from "../../types/SeriesAdmin";
 
 interface Props {
@@ -8,7 +10,7 @@ interface Props {
   onSeriesCreated: (seriesId: string, seriesCode: string) => void;
 }
 
-type Step = "create" | "brochure" | "complete";
+type Step = "create" | "brochure" | "seriesSpecs" | "firstModel" | "complete";
 
 export default function AddNewSeriesModal({
   onClose,
@@ -115,7 +117,8 @@ export default function AddNewSeriesModal({
         }
       );
 
-      setStep("complete");
+      // Move to series specs form
+      setStep("seriesSpecs");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to upload brochure";
@@ -123,6 +126,16 @@ export default function AddNewSeriesModal({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSeriesSpecsSaved = (): void => {
+    // After series specs are saved, move to adding first model
+    setStep("firstModel");
+  };
+
+  const handleFirstModelAdded = (): void => {
+    // After first model is added, show complete message
+    setStep("complete");
   };
 
   const handleComplete = (): void => {
@@ -133,6 +146,12 @@ export default function AddNewSeriesModal({
   const handleBack = (): void => {
     if (step === "brochure") {
       setStep("create");
+      setError("");
+    } else if (step === "seriesSpecs") {
+      setStep("brochure");
+      setError("");
+    } else if (step === "firstModel") {
+      setStep("seriesSpecs");
       setError("");
     }
   };
@@ -495,6 +514,22 @@ export default function AddNewSeriesModal({
         </div>
       )}
 
+      {step === "seriesSpecs" && (
+        <SeriesForm
+          seriesCode={seriesCode}
+          onSave={handleSeriesSpecsSaved}
+          onCancel={handleBack}
+        />
+      )}
+
+      {step === "firstModel" && (
+        <QuickAddModelForm
+          seriesCode={seriesCode}
+          onSave={handleFirstModelAdded}
+          onCancel={handleBack}
+        />
+      )}
+
       {step === "complete" && (
         <div>
           <div
@@ -509,16 +544,25 @@ export default function AddNewSeriesModal({
                 color: "#2e7d32",
               }}
             >
-              ✓ Series Created Successfully
+              ✓ Series Ready
             </h3>
             <p
               style={{
-                margin: 0,
+                margin: "0 0 16px 0",
                 color: "#666",
                 fontSize: 14,
               }}
             >
-              Series <strong>{seriesCode}</strong> is ready for models.
+              Series <strong>{seriesCode}</strong> has been created with brochure and specs.
+            </p>
+            <p
+              style={{
+                margin: 0,
+                color: "#999",
+                fontSize: 13,
+              }}
+            >
+              You can add more models from the series list anytime.
             </p>
           </div>
 
