@@ -22,6 +22,7 @@ interface ScreenPreviewProps {
   contentType: "sample" | "video" | "upload" | "none";
   unit: "mtr" | "ft";
   targetResolution?: "None" | "HD" | "FHD" | "UHD";
+  isAIO?: boolean;
 }
 
 const STANDARD_RESOLUTIONS = {
@@ -31,7 +32,48 @@ const STANDARD_RESOLUTIONS = {
 };
 
 export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
-  ({ width, height, resolutionW, resolutionH, cabinetsW, cabinetsH, model, brightness = 800, pixelPitch = 1.875, uploadedImage, result, contentType, unit, targetResolution = "None" }, ref) => {
+  ({ 
+    width, 
+    height, 
+    resolutionW, 
+    resolutionH, 
+    cabinetsW, 
+    cabinetsH, 
+    model, 
+    brightness = 800, 
+    pixelPitch = 1.875, 
+    uploadedImage, 
+    result, 
+    contentType, 
+    unit, 
+    targetResolution = "None",
+    isAIO = false 
+  }, ref) => {
+    // ==========================================
+    // AIO DISPLAY SIMPLIFIED PREVIEW
+    // ==========================================
+    if (isAIO) {
+      return (
+        <div
+          ref={ref}
+          style={{
+            width: '100%',
+            aspectRatio: '16/9',
+            background: '#000',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '20px',
+            fontWeight: 'bold'
+          }}
+        >
+          136-inch AIO Display
+        </div>
+      );
+    }
+
     const MAX_PREVIEW_WIDTH = 550;
     const MAX_PREVIEW_HEIGHT = 360;
     const METERS_TO_FEET = 3.28084;
@@ -49,7 +91,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     const screenWidthPx = safeWidth * scale;
     const screenHeightPx = safeHeight * scale;
     
-    // Change 1: Responsive scale implementation using calculated dimensions
     // ======================================================
     // RESPONSIVE PREVIEW SCALE
     // Scales the complete engineering preview on smaller
@@ -152,7 +193,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
           {model && <div className="preview-model-badge">{model}</div>}
         </div>
 
-        {/* Change 2: Outer wrapper tailored for responsive scaling without flex clipping */}
+        {/* Outer wrapper tailored for responsive scaling without flex clipping */}
         <div
           style={{
             display: "flex",
@@ -162,7 +203,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             width: "100%",
           }}
         >
-          {/* Change 3: Scaled responsive container element */}
+          {/* Scaled responsive container element */}
           <div
             style={{
               position: "relative",

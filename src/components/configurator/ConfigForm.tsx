@@ -16,11 +16,10 @@ interface ConfigFormProps {
   setContentType: (type: "sample" | "video" | "upload" | "none") => void;
   unit: "mtr" | "ft";
   setUnit: (unit: "mtr" | "ft") => void;
-  // ADDED: Resolution targeting props
   targetResolution: "None" | "HD" | "FHD" | "UHD";
   setTargetResolution: (res: "None" | "HD" | "FHD" | "UHD") => void;
+  isAIO?: boolean;
 }
-
 export const ConfigForm = ({
   products,
   selectedProduct,
@@ -38,9 +37,10 @@ export const ConfigForm = ({
   setUnit,
   targetResolution,
   setTargetResolution,
+  isAIO = false,
 }: ConfigFormProps) => {
   const [applicationType, setApplicationType] = useState("");
-  
+
   // Facet States
   const [pitchFilter, setPitchFilter] = useState<string>("");
   const [brightnessFilter, setBrightnessFilter] = useState<string>("");
@@ -71,7 +71,7 @@ export const ConfigForm = ({
   // Convert local text smoothly when explicitly toggling units
   const handleUnitToggle = (newUnit: "mtr" | "ft") => {
     if (newUnit === unit) return;
-    
+
     const wNum = parseFloat(localWidthStr);
     const hNum = parseFloat(localHeightStr);
 
@@ -89,33 +89,33 @@ export const ConfigForm = ({
 
   // Extract distinct master application categories
   const applicationTypes = useMemo(() => {
-  // 1. Get unique types safely
-  const rawTypes = products
-    .map(p => p.applicationType)
-    .filter(Boolean) as string[];
-    
-  const uniqueTypes = [...new Set(rawTypes)];
+    // 1. Get unique types safely
+    const rawTypes = products
+      .map(p => p.applicationType)
+      .filter(Boolean) as string[];
 
-  // 2. Sort them using a foolproof lowercase map
-  return uniqueTypes.sort((a, b) => {
-    // Convert to lowercase and remove accidental spaces for the comparison
-    const safeA = a.toLowerCase().trim();
-    const safeB = b.toLowerCase().trim();
+    const uniqueTypes = [...new Set(rawTypes)];
 
-    // Define the exact order we want
-    const orderMap: Record<string, number> = {
-      "indoor (flat display)": 1,
-      "indoor (curve display)": 2,
-      "outdoor": 3
-    };
+    // 2. Sort them using a foolproof lowercase map
+    return uniqueTypes.sort((a, b) => {
+      // Convert to lowercase and remove accidental spaces for the comparison
+      const safeA = a.toLowerCase().trim();
+      const safeB = b.toLowerCase().trim();
 
-    // If it finds a match, it gets a score 1-3. If not, it drops to the bottom (99).
-    const scoreA = orderMap[safeA] || 99;
-    const scoreB = orderMap[safeB] || 99;
+      // Define the exact order we want
+      const orderMap: Record<string, number> = {
+        "indoor (flat display)": 1,
+        "indoor (curve display)": 2,
+        "outdoor": 3
+      };
 
-    return scoreA - scoreB;
-  });
-}, [products]);
+      // If it finds a match, it gets a score 1-3. If not, it drops to the bottom (99).
+      const scoreA = orderMap[safeA] || 99;
+      const scoreB = orderMap[safeB] || 99;
+
+      return scoreA - scoreB;
+    });
+  }, [products]);
 
   const pitchRanges = ["<= 1.0mm", "1.1mm - 1.6mm", ">= 1.7mm"];
   const brightnessRanges = ["<= 1000 nits", "> 1000 nits"];
@@ -299,12 +299,12 @@ export const ConfigForm = ({
         </div>
       </div>
 
-     {/* SECTION 2: LIVE HARDWARE SEARCH OUTPUT */}
+      {/* SECTION 2: LIVE HARDWARE SEARCH OUTPUT */}
       <div className="config-section">
         <div className="config-section-title">MATCHED MODELS ({filteredProducts.length})</div>
         {filteredProducts.length === 0 ? (
           <div className="filter-fallback-box">
-            No active metrics found matching this profile. 
+            No active metrics found matching this profile.
             <button type="button" className="filter-reset-link" onClick={handleClearFilters}>
               Reset Filters
             </button>
@@ -315,8 +315,8 @@ export const ConfigForm = ({
               const isSelected = selectedProduct?.id === product.id;
               const ledType = getProductSpec(product, "LED Type");
               const service = getProductSpec(product, "Service Access");
-              
-             return (
+
+              return (
                 <div
                   key={product.id}
                   className={`model-selection-card ${isSelected ? "selected" : ""}`}
@@ -329,25 +329,25 @@ export const ConfigForm = ({
                   }}
                 >
                   {/* TOP ROW: Title on left, Badges on right */}
-                  <div style={{ 
-                    display: "flex", 
-                    justifyContent: "space-between", 
-                    alignItems: "center", 
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     width: "100%",
                     flexWrap: "nowrap",
                     gap: "8px"
                   }}>
-                    <div style={{ 
-                      fontWeight: 600, 
-                      fontSize: "14px", 
-                      whiteSpace: "nowrap", 
-                      overflow: "hidden", 
+                    <div style={{
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
                       textOverflow: "ellipsis",
                       flexGrow: 1
                     }}>
                       {product.model}
                     </div>
-                    
+
                     {(ledType || service) && (
                       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                         {ledType && <span className="card-badge">{ledType}</span>}
@@ -357,16 +357,16 @@ export const ConfigForm = ({
                   </div>
 
                   {/* BOTTOM ROW: Pitch and Brightness forced to one line */}
-                  <div style={{ 
-                    fontSize: "11.5px", 
-                    color: "#555", 
-                    whiteSpace: "nowrap", 
-                    overflow: "hidden", 
+                  <div style={{
+                    fontSize: "11.5px",
+                    color: "#555",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
                     textOverflow: "ellipsis",
                     width: "100%"
                   }}>
-                    Pitch: <strong>{product.pitch} mm</strong> 
-                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span> 
+                    Pitch: <strong>{product.pitch} mm</strong>
+                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span>
                     Brightness: <strong>{product.brightness} nits</strong>
                   </div>
                 </div>
@@ -403,7 +403,7 @@ export const ConfigForm = ({
       {/* SECTION 4: PREVIEW CANVAS TARGET */}
       <div className="config-section">
         <div className="config-section-title">PREVIEW CONTENT</div>
-        
+
         {/* Content Mode Selector */}
         <div className="form-group">
           <label className="section-label">SELECT CONTENT TYPE</label>
@@ -447,80 +447,82 @@ export const ConfigForm = ({
         )}
       </div>
 
-      {/* SECTION 5: BOUNDARY ENGINE METRICS */}
-      <div className="config-section">
-        <div className="config-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>DISPLAY SIZE</span>
-          <div className="unit-toggle" style={{ display: 'flex', gap: '6px' }}>
-            <button
-              type="button"
-              className={`filter-chip-btn ${unit === 'mtr' ? 'active' : ''}`}
-              style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
-              onClick={() => handleUnitToggle('mtr')}
-            >
-              mtr
-            </button>
-            <button
-              type="button"
-              className={`filter-chip-btn ${unit === 'ft' ? 'active' : ''}`}
-              style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
-              onClick={() => handleUnitToggle('ft')}
-            >
-              ft
-            </button>
+      {/* SECTION 5: BOUNDARY ENGINE METRICS - HIDE FOR AIO */}
+      {!isAIO && (
+        <div className="config-section">
+          <div className="config-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>DISPLAY SIZE</span>
+            <div className="unit-toggle" style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                className={`filter-chip-btn ${unit === 'mtr' ? 'active' : ''}`}
+                style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
+                onClick={() => handleUnitToggle('mtr')}
+              >
+                mtr
+              </button>
+              <button
+                type="button"
+                className={`filter-chip-btn ${unit === 'ft' ? 'active' : ''}`}
+                style={{ padding: '2px 8px', fontSize: '11px', minWidth: 'auto', flex: 'none' }}
+                onClick={() => handleUnitToggle('ft')}
+              >
+                ft
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Width Workspace Block */}
-        <div className="form-group">
-          <label className="section-label">DISPLAY WIDTH</label>
-          <div className="dimension-card">
-            <div className="dimension-control">
-              <button type="button" onClick={() => {
-                const currentVal = parseFloat(localWidthStr) || 0;
-                setLocalWidthStr(Math.max(0, currentVal - 0.1).toFixed(2));
-              }}>−</button>
-              <div className="dimension-value">
-                <input
-                  type="text"
-                  value={localWidthStr}
-                  onChange={(e) => setLocalWidthStr(e.target.value)}
-                />
-                <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
+          {/* Width Workspace Block */}
+          <div className="form-group">
+            <label className="section-label">DISPLAY WIDTH</label>
+            <div className="dimension-card">
+              <div className="dimension-control">
+                <button type="button" onClick={() => {
+                  const currentVal = parseFloat(localWidthStr) || 0;
+                  setLocalWidthStr(Math.max(0, currentVal - 0.1).toFixed(2));
+                }}>−</button>
+                <div className="dimension-value">
+                  <input
+                    type="text"
+                    value={localWidthStr}
+                    onChange={(e) => setLocalWidthStr(e.target.value)}
+                  />
+                  <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
+                </div>
+                <button type="button" onClick={() => {
+                  const currentVal = parseFloat(localWidthStr) || 0;
+                  setLocalWidthStr((currentVal + 0.1).toFixed(2));
+                }}>+</button>
               </div>
-              <button type="button" onClick={() => {
-                const currentVal = parseFloat(localWidthStr) || 0;
-                setLocalWidthStr((currentVal + 0.1).toFixed(2));
-              }}>+</button>
+            </div>
+          </div>
+
+          {/* Height Workspace Block */}
+          <div className="form-group">
+            <label className="section-label">DISPLAY HEIGHT</label>
+            <div className="dimension-card">
+              <div className="dimension-control">
+                <button type="button" onClick={() => {
+                  const currentVal = parseFloat(localHeightStr) || 0;
+                  setLocalHeightStr(Math.max(0, currentVal - 0.1).toFixed(2));
+                }}>−</button>
+                <div className="dimension-value">
+                  <input
+                    type="text"
+                    value={localHeightStr}
+                    onChange={(e) => setLocalHeightStr(e.target.value)}
+                  />
+                  <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
+                </div>
+                <button type="button" onClick={() => {
+                  const currentVal = parseFloat(localHeightStr) || 0;
+                  setLocalHeightStr((currentVal + 0.1).toFixed(2));
+                }}>+</button>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Height Workspace Block */}
-        <div className="form-group">
-          <label className="section-label">DISPLAY HEIGHT</label>
-          <div className="dimension-card">
-            <div className="dimension-control">
-              <button type="button" onClick={() => {
-                const currentVal = parseFloat(localHeightStr) || 0;
-                setLocalHeightStr(Math.max(0, currentVal - 0.1).toFixed(2));
-              }}>−</button>
-              <div className="dimension-value">
-                <input
-                  type="text"
-                  value={localHeightStr}
-                  onChange={(e) => setLocalHeightStr(e.target.value)}
-                />
-                <span>{unit === 'mtr' ? 'mtr' : 'ft'}</span>
-              </div>
-              <button type="button" onClick={() => {
-                const currentVal = parseFloat(localHeightStr) || 0;
-                setLocalHeightStr((currentVal + 0.1).toFixed(2));
-              }}>+</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* SECTION 6: TARGET RESOLUTION (FHD/4K) */}
       <div className="config-section">
@@ -528,14 +530,14 @@ export const ConfigForm = ({
         <div className="form-group">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
             {["None", "HD", "FHD", "UHD"].map((res) => (
-              <label 
-                key={res} 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "10px", 
-                  cursor: "pointer", 
-                  fontSize: "14px", 
+              <label
+                key={res}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  cursor: "pointer",
+                  fontSize: "14px",
                   color: "#334155",
                   fontWeight: targetResolution === res ? 600 : 400
                 }}
@@ -546,9 +548,9 @@ export const ConfigForm = ({
                   value={res}
                   checked={targetResolution === res}
                   onChange={(e) => setTargetResolution(e.target.value as any)}
-                  style={{ 
-                    accentColor: "#005BAC", 
-                    width: "16px", 
+                  style={{
+                    accentColor: "#005BAC",
+                    width: "16px",
                     height: "16px",
                     cursor: "pointer"
                   }}
@@ -564,11 +566,14 @@ export const ConfigForm = ({
       <button
         className="calculate-button"
         onClick={handleSubmitCalculate}
-        disabled={!selectedProduct || localWidthStr === "" || localHeightStr === ""}
+        disabled={
+          !selectedProduct ||
+          (!isAIO && (localWidthStr === "" || localHeightStr === ""))
+        }
       >
         Generate Configuration
       </button>
-      
+
     </div>
   );
 };

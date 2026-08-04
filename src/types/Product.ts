@@ -19,7 +19,7 @@ export interface Product {
   cabinetResolutionW: number;
   cabinetResolutionH: number;
   modulesPerCabinet: number;
-  
+  seriesType?: "standard" | "aio";
   // 💡 NEW: Attach the dynamic specs array
   product_specifications?: ProductSpecification[];
 }

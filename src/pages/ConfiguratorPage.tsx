@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 
-// @ts-ignore - Suppressing TS error: TypeScript natively lacks module declarations for CSS imports. 
-// The bundler (Vite/Webpack) handles this at runtime, so ignoring it here is perfectly safe.
+// @ts-ignore
 import "../App.css";
 
 import { ProductService } from "../services/ProductService";
@@ -21,16 +20,10 @@ import { BrochurePageService } from "../services/BrochurePageService";
 import { ProposalService } from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
 
-// FIXED: Bypasses static image compilation checks to clear asset declaration breaks
 const panasonicLogo = new URL("../assets/Panasonic-logo.jpg", import.meta.url).href;
 
 /**
- * The core orchestrator component for the PitchLine Configurator.
- * * * WHY THIS EXISTS: This is the "brain" of the application. It acts as the single source of truth 
- * for all configuration state (dimensions, selected product, UI toggles) and orchestrates the flow 
- * of data between the input forms, the calculation engine, the visual preview, and the PDF generator.
- * By keeping state hoisted here, we ensure the preview and results panel are always perfectly synchronized.
- * * @returns {JSX.Element} The rendered Configurator Dashboard view.
+ * AIO SUPPORT: Detects if selected product is AIO type and hides irrelevant UI elements.
  */
 function ConfiguratorPage() {
     // --- Application State ---
@@ -39,10 +32,7 @@ function ConfiguratorPage() {
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const [contentType, setContentType] = useState<"sample" | "video" | "upload" | "none">("sample");
 
-    // Unit measurement state (mtr or ft)
     const [unit, setUnit] = useState<"mtr" | "ft">("mtr");
-
-    // ADDED: Target resolution state
     const [targetResolution, setTargetResolution] = useState<"None" | "HD" | "FHD" | "UHD">("None");
 
     const [showExportModal, setShowExportModal] = useState(false);
@@ -58,22 +48,16 @@ function ConfiguratorPage() {
     const [height, setHeight] = useState<number>(0);
     const [result, setResult] = useState<ConfigurationResult | null>(null);
 
-    // Ref used to capture the DOM node of the screen preview for the PDF export screenshot.
     const screenPreviewRef = useRef<HTMLDivElement>(null);
-
-    // Ref used to capture the Viewing Distance Visualizer for the PDF export.
     const viewingDistanceRef = useRef<HTMLDivElement>(null);
 
-    /**
-     * Initialization hook.
-     * Fetches the product catalog and necessary marketing assets (brochures) as soon as the app mounts.
-     */
+    // AIO DETECTION
+    const isAIO = selectedProduct?.seriesType === "aio";
+
     useEffect(() => {
         const loadProducts = async () => {
             try {
                 const data = await ProductService.getProducts();
-                // Pre-fetching brochure pages here ensures they are ready in memory 
-                // if the user immediately tries to export a PDF, avoiding a delayed network waterfall.
                 const pages = await BrochurePageService.getPages("PFP");
                 setProducts(data);
             } catch (error) {
@@ -85,23 +69,46 @@ function ConfiguratorPage() {
         loadProducts();
     }, []);
 
-    /**
-     * Validates user inputs and triggers the core mathematical configuration engine.
-     *
-     * @param {number} [overrideWidth] - Optional injected width (used if calculation is triggered from a secondary source).
-     * @param {number} [overrideHeight] - Optional injected height (used if calculation is triggered from a secondary source).
-     * @returns {void} Updates the 'result' state with the calculated specifications, which triggers a re-render of the preview and results panel.
-     */
     const handleCalculate = (overrideWidth?: number, overrideHeight?: number) => {
-        // Fallback logic: If specific dimensions are passed directly to this function, use them. 
-        // Otherwise, rely on the component's main state variables.
         const targetWidth = overrideWidth !== undefined ? overrideWidth : width;
         const targetHeight = overrideHeight !== undefined ? overrideHeight : height;
 
-        if (!selectedProduct || targetWidth <= 0 || targetHeight <= 0) {
+        if (!selectedProduct) {
+            alert("Please select a product.");
+            return;
+        }
+
+        // AIO: Fixed specs, no calculation needed
+        if (isAIO) {
+            const aioResult: ConfigurationResult = {
+                cabinetsW: 1,
+                cabinetsH: 1,
+                totalCabinets: 1,
+                totalModules: 1,
+                actualWidth: 3036.8,
+                actualHeight: 1825.8,
+                resolutionW: 1920,
+                resolutionH: 1080,
+                totalArea: 5.06,
+                maximumPower: 2500,
+                averagePower: 833,
+                maximumHeat: 8537,
+                averageHeat: 2843,
+                maximumHeatBTU: 8537,
+                averageHeatBTU: 2843,
+                diagonalInches: 136,
+                aspectRatio: "16:9",
+            };
+            setResult(aioResult);
+            return;
+        }
+
+        // Standard products: require valid dimensions
+        if (targetWidth <= 0 || targetHeight <= 0) {
             alert("Please select a product and enter valid dimensions.");
             return;
         }
+
         try {
             const config = calculateConfiguration(selectedProduct, targetWidth, targetHeight);
             setResult(config);
@@ -110,46 +117,31 @@ function ConfiguratorPage() {
         }
     };
 
-    /**
-     * Orchestrates the complex sequence of capturing the UI preview, saving the lead to the database, 
-     * and generating the downloadable PDF proposal.
-     *
-     * @param {any} [proposalData] - The customer and project information collected from the export modal form.
-     * @returns {Promise<void>} Resolves when the PDF generation is successfully triggered.
-     */
     const handleExportPdf = async (proposalData?: any) => {
         if (!selectedProduct || !result) return;
         try {
             let imageData: string | undefined;
             let viewingDistanceImage: string | undefined;
 
-            // We use html2canvas to take a literal "screenshot" of the React DOM element.
-            // Using { scale: 2 } forces a higher resolution capture (Retina-like quality), 
-            // preventing the UI mockup from looking blurry or pixelated when printed in the final PDF.
             if (screenPreviewRef.current) {
                 const canvas = await html2canvas(screenPreviewRef.current, { scale: 2 });
                 imageData = canvas.toDataURL("image/png");
             }
 
-            // Capture the Viewing Distance Visualizer so it can be rendered
-            // as a dedicated engineering page in the proposal PDF.
-            if (viewingDistanceRef.current) {
+            // Capture Viewing Distance only for standard products (not AIO)
+            if (viewingDistanceRef.current && !isAIO) {
                 const canvas = await html2canvas(viewingDistanceRef.current, {
                     scale: 2,
                 });
-
                 viewingDistanceImage = canvas.toDataURL("image/png");
             }
 
             const proposalId = generateProposalId();
 
-            // If user data was provided, we save the lead to Supabase *before* building the PDF.
-            // This ensures marketing/sales captures the data even if the client's PDF download gets interrupted.
             if (proposalData) {
                 await ProposalService.createProposal({ ...proposalData, proposalId }, selectedProduct, result, width, height);
             }
 
-            // FIXED: 'unit' is now passed at the very end of this call
             const typedGeneratePdf = generatePdf as (
                 product: Product,
                 result: ConfigurationResult,
@@ -205,7 +197,6 @@ function ConfiguratorPage() {
                             setContentType={setContentType}
                             unit={unit}
                             setUnit={setUnit}
-                            // ADDED: Passing state to the form
                             targetResolution={targetResolution}
                             setTargetResolution={setTargetResolution}
                         />
@@ -229,40 +220,55 @@ function ConfiguratorPage() {
                                         uploadedImage={uploadedImage}
                                         contentType={contentType}
                                         unit={unit}
-                                        // ADDED: Passing state to the preview
                                         targetResolution={targetResolution}
                                     />
                                 </div>
-                                <div className="export-section">
-                                    <ResultsPanel result={result} selectedProduct={selectedProduct} unit={unit} />
-                                    <button className="export-pdf-button" onClick={() => setShowExportModal(true)}>
-                                        Export PDF
-                                    </button>
-                                </div>
 
-                                <div
-                                    ref={viewingDistanceRef}
-                                    style={{
-                                        width: "100%",
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        marginTop: "2rem",
-                                        marginBottom: "2rem",
-                                    }}
-                                >
+                                {/* HIDE Engineering Summary and Export Button for AIO */}
+                                {!isAIO && (
+                                    <div className="export-section">
+                                        <ResultsPanel result={result} selectedProduct={selectedProduct} unit={unit} />
+                                        <button className="export-pdf-button" onClick={() => setShowExportModal(true)}>
+                                            Export PDF
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* FOR AIO: Show simple export button without engineering summary */}
+                                {isAIO && (
+                                    <div className="export-section">
+                                        <button className="export-pdf-button" onClick={() => setShowExportModal(true)}>
+                                            Export PDF
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* HIDE Viewing Distance Visualizer for AIO */}
+                                {!isAIO && (
                                     <div
+                                        ref={viewingDistanceRef}
                                         style={{
                                             width: "100%",
-                                            maxWidth: "760px",
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            marginTop: "2rem",
+                                            marginBottom: "2rem",
                                         }}
                                     >
-                                        <ViewingDistanceVisualizer
-                                            pixelPitch={selectedProduct.pitch}
-                                            actualWidth={result.actualWidth}
-                                            actualHeight={result.actualHeight}
-                                        />
+                                        <div
+                                            style={{
+                                                width: "100%",
+                                                maxWidth: "760px",
+                                            }}
+                                        >
+                                            <ViewingDistanceVisualizer
+                                                pixelPitch={selectedProduct.pitch}
+                                                actualWidth={result.actualWidth}
+                                                actualHeight={result.actualHeight}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </>
                         ) : (
                             <div>Screen preview will appear here after calculation.</div>

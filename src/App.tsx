@@ -19,6 +19,10 @@ function App() {
         path="/admin"
         element={<AdminLogin />}
       />
+      <Route
+  path="/test"
+  element={<h1>TEST PAGE</h1>}
+/>
 
       <Route
   path="/dashboard"
@@ -27,6 +31,7 @@ function App() {
       <AdminDashboard />
     </ProtectedRoute>
   }
+  
 />
       
     </Routes>

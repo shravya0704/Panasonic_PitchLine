@@ -17,37 +17,35 @@ import { assignPowerChains } from "../calculations/assignPowerChains";
 import { POWER_RULES } from "../rules/PowerRules";
 import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
 
-// IMPORT THE HARDCODED BASE64 STRING
-// WHY BASE64: jsPDF requires images to be in base64 format for embedding. 
-// Importing a pre-converted string completely bypasses asynchronous canvas loading issues 
-// and CORS restrictions that often cause PDF generators to crash or render blank images.
 import { panasonicLogoBase64 } from "../../assets/logoBase64";
 
 /**
  * The master orchestrator for generating the final client-facing PDF proposal.
- * It linearly constructs the document page by page, integrating dynamic configuration 
- * data, visual previews, complex engineering diagrams, and static marketing assets.
- *
- * PHASE 5 UPDATE:
- * - Page 1 now uses EDM image (from brochure.coverImage, which is series.edm_image_url)
- * - Remaining pages follow as before
- * - Brochure pages are appended at the end after all engineering pages
  *
  * PRIORITY 1 FIX (July 26, 2026):
  * - RESTORED: drawProductSpecsPage() call at Page 5
- * - This was accidentally removed during a refactor
- * - Function now properly invoked with correct parameters
  *
- * @param {Product} product - The configured LED product model.
- * @param {ConfigurationResult} result - The mathematical and physical output from the configuration engine.
- * @param {number} width - The requested screen width.
- * @param {number} height - The requested screen height.
- * @param {string} [screenPreviewImage] - The base64 UI screenshot captured via html2canvas.
- * @param {string} [viewingDistanceImage] - Base64 snapshot of the Viewing Distance Visualizer captured using html2canvas.
- * @param {object} [proposalData] - Customer and project details from the export modal.
- * @param {string} [proposalId] - The unique system-generated identifier for the proposal.
- * @param {"mtr" | "ft"} [unit="mtr"] - The measurement system selected by the user, defaults to meters.
- * @returns {Promise<void>} A promise that resolves when the browser triggers the file download.
+ * PRIORITY 2 FIX (July 26, 2026):
+ * - FIXED: Footer loop now only applies to engineering pages (2-7), not brochure pages (8+)
+ *
+ * PRIORITY 3 FIX (July 26, 2026):
+ * - IMPLEMENTED: Real Supabase Auth, RLS policies enabled
+ *
+ * AIO SERIES SUPPORT (Priority 6 Partial - Simplified Scope):
+ * - AIO products get simplified PDF: EDM + Brochure only
+ * - No engineering calculations, power diagrams, or viewing distance (AIO is fixed unit)
+ * - Detected via product.applicationType === "AIO" or series.type === "aio"
+ *
+ * @param {Product} product - The configured LED product model
+ * @param {ConfigurationResult} result - Mathematical and physical output from configuration engine
+ * @param {number} width - The requested screen width
+ * @param {number} height - The requested screen height
+ * @param {string} [screenPreviewImage] - Base64 UI screenshot
+ * @param {string} [viewingDistanceImage] - Base64 viewing distance visualizer
+ * @param {object} [proposalData] - Customer and project details
+ * @param {string} [proposalId] - Unique system-generated identifier
+ * @param {"mtr" | "ft"} [unit="mtr"] - Measurement system
+ * @returns {Promise<void>} Resolves when browser triggers file download
  */
 export const generatePdf = async (
   product: Product,
@@ -74,12 +72,44 @@ export const generatePdf = async (
 
   const brochure = await getBrochureForSeries(product.seriesCode);
 
-  // Page 1: EDM Cover Page (from series.edm_image_url)
+  // ========== AIO BRANCH ==========
+  if (product.applicationType === "AIO") {
+    // AIO: Simplified PDF structure
+    // Page 1: EDM Cover
+    drawMarketingCoverPage(doc, brochure.coverImage);
+
+    // Pages 2+: Brochure pages (contains all marketing + specs)
+    addBrochurePages(doc, brochure);
+
+    // Optionally apply footer to EDM only (minimal branding)
+    if (proposalId) {
+      const totalPages = doc.getNumberOfPages();
+      console.log("AIO PDF TOTAL PAGES:", totalPages);
+      
+      // Only stamp page 1 (EDM) with footer
+      doc.setPage(1);
+      applyGlobalPageTemplate(
+        doc,
+        proposalId,
+        1,
+        totalPages,
+        panasonicLogoBase64
+      );
+    }
+
+    // Save with AIO-specific filename
+    const targetProject = proposalData?.projectName || "AIO-Display";
+    const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
+    const finalFilename = `PitchLine_${product.seriesCode}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
+    doc.save(finalFilename);
+    return; // Exit early for AIO
+  }
+
+  // ========== STANDARD BRANCH (Non-AIO) ==========
+  // Page 1: EDM Cover Page
   drawMarketingCoverPage(doc, brochure.coverImage);
 
   // Page 2: Proposal Summary
-  // We explicitly check for proposal data here because an admin might generate a "quick PDF" 
-  // without filling out the formal client lead capture form.
   doc.addPage();
   if (proposalData && proposalId) {
     drawProposalSummaryPage(
@@ -110,7 +140,6 @@ export const generatePdf = async (
   );
 
   // Page 5: Product Specifications
-  // PRIORITY 1 FIX: This function call was missing (accidental deletion during refactor)
   doc.addPage();
   await drawProductSpecsPage(doc, product);
 
@@ -151,22 +180,14 @@ export const generatePdf = async (
   // Append Brochure pages at the very end
   addBrochurePages(doc, brochure);
 
-  // Stamp Document Footers across pages sequentially
+  // Stamp Document Footers across engineering pages only
   if (proposalId) {
     const totalPages = doc.getNumberOfPages();
     console.log("TOTAL PDF PAGES:", totalPages);
 
     // WHY LOOP FROM 2 TO 7?
-    // We start at i=2 because Page 1 is a full-bleed EDM cover (we don't want a footer ruining the graphic).
-    // We cap it at i<=7 to apply footers ONLY to the core engineering pages:
-    //   - Page 2: Proposal Summary
-    //   - Page 3: Screen Configuration
-    //   - Page 4: Viewing Distance
-    //   - Page 5: Product Specifications
-    //   - Page 6: Power Diagram
-    //   - Page 7: Data Diagram
-    // Page 8 onwards are brochure pages (cover + interior), which have their own design layouts.
-    // Pass the base64 string directly to the template
+    // Pages 1-7: Marketing + Engineering pages
+    // Pages 8+: Brochure pages (have their own design, no footer stamp)
     for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(
@@ -174,21 +195,14 @@ export const generatePdf = async (
         proposalId,
         i,
         totalPages,
-        panasonicLogoBase64 // <-- Using the string here!
+        panasonicLogoBase64
       );
     }
   }
 
-  // Fallback chain focusing primarily on Project Name
+  // Construct final filename
   const targetProject = proposalData?.projectName || "Project";
-
-  // Sanitize illegal operating system characters to prevent crash-on-save
-  // WHY REGEX: Users might type project names like "Lobby A/B" or "Date: 10/12". 
-  // Characters like / \ : * ? " < > | are completely illegal in Windows and macOS file systems. 
-  // If we don't swap them for underscores, the browser's download manager will silently fail or crash.
   const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
-
-  // Construct final engineered filename assembly
   const finalFilename = `PitchLine_${product.seriesCode || "LED"}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
 
   // Save Document Binary
