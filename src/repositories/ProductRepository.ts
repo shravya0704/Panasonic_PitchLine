@@ -86,7 +86,7 @@ export const ProductRepository = {
   },
 
   // 💡 ATOMIC CREATE
-  async create(product: Product) {
+  async create(product: Omit<Product, 'id'>) {
     const { data: insertedProduct, error: productError } = await supabase
       .from("products")
       .insert({

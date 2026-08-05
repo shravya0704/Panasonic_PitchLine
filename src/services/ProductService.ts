@@ -41,10 +41,10 @@ export const ProductService = {
   /**
    * Registers a new LED display product model into the system catalog.
    *
-   * @param {Product} product - The new Product object to be created.
+   * @param {Omit<Product, 'id'>} product - The new Product object to be created (without the generated ID).
    * @returns {Promise<Product>} A promise that resolves to the newly created Product object (including its generated ID).
    */
-  async createProduct(product: Product) {
+  async createProduct(product: Omit<Product, 'id'>) {
     return ProductRepository.create(product);
   },
 
@@ -58,3 +58,5 @@ export const ProductService = {
     return ProductRepository.update(product);
   },
 };
+
+export default ProductService;

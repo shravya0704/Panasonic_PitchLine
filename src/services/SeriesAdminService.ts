@@ -27,23 +27,31 @@ export interface SeriesCreationProgressResponse {
  * SeriesAdminService
  * High-level orchestration of the series creation workflow
  * Handles validation, series creation, brochure upload, and progress tracking
+ * NOW WITH AIO SUPPORT: Accepts and saves AIO display specs
  */
 export const SeriesAdminService = {
   /**
    * STEP 1: Initiate series creation
    * Creates the series record and brochure record in the database
    *
-   * @param data - Object with series code and name
+   * @param data - Object with series code, name, type, and optional AIO specs
    * @returns Object with seriesId and seriesBrochureId
    * @throws Error if validation fails or database operation fails
    */
   async initiateSeriesCreation(data: {
     code: string;
     name: string;
+    type: "standard" | "aio";
+    aioDisplayDiagonal?: number;
+    aioResolutionW?: number;
+    aioResolutionH?: number;
+    aioPixelPitch?: number;
+    aioBrightness?: number;
   }): Promise<SeriesCreationInitResponse> {
     // ========== VALIDATION ==========
     const code = data.code?.trim() || "";
     const name = data.name?.trim() || "";
+    const type = data.type;
 
     // Validate code is not empty
     if (!code) {
@@ -69,12 +77,37 @@ export const SeriesAdminService = {
       throw new Error("Series code already exists. Choose a different one.");
     }
 
+    // Validate AIO specs if AIO series
+    if (type === "aio") {
+      if (!data.aioDisplayDiagonal || data.aioDisplayDiagonal <= 0) {
+        throw new Error("AIO display diagonal is required and must be positive");
+      }
+      if (!data.aioResolutionW || !data.aioResolutionH || data.aioResolutionW <= 0 || data.aioResolutionH <= 0) {
+        throw new Error("AIO resolution W and H are required and must be positive");
+      }
+      if (!data.aioPixelPitch || data.aioPixelPitch <= 0) {
+        throw new Error("AIO pixel pitch is required and must be positive");
+      }
+      if (!data.aioBrightness || data.aioBrightness <= 0) {
+        throw new Error("AIO brightness is required and must be positive");
+      }
+    }
+
     try {
       // ========== CREATE SERIES ==========
       const series = await SeriesAdminRepository.createSeries({
         code,
         name,
+        type,
         edmImageUrl: GLOBAL_EDM_IMAGE_URL,
+        // Spread AIO specs if present
+        ...(type === "aio" && {
+          aioDisplayDiagonal: data.aioDisplayDiagonal,
+          aioResolutionW: data.aioResolutionW,
+          aioResolutionH: data.aioResolutionH,
+          aioPixelPitch: data.aioPixelPitch,
+          aioBrightness: data.aioBrightness,
+        }),
       });
 
       // ========== CREATE BROCHURE RECORD ==========

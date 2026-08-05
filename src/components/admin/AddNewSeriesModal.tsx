@@ -2,7 +2,7 @@ import { useState, type ChangeEvent } from "react";
 import AdminModal from "./AdminModal";
 import SeriesAdminService from "../../services/SeriesAdminService";
 import SeriesForm from "./SeriesForm";
-import QuickAddModelForm from "./QuickAddModelForm";
+import ProductService from "../../services/ProductService";
 import type { UploadProgress } from "../../types/SeriesAdmin";
 
 interface Props {
@@ -10,7 +10,17 @@ interface Props {
   onSeriesCreated: (seriesId: string, seriesCode: string) => void;
 }
 
-type Step = "create" | "brochure" | "seriesSpecs" | "firstModel" | "complete";
+type Step = "create" | "brochure" | "seriesSpecs" | "creating" | "complete";
+type SeriesType = "standard" | "aio";
+
+// AIO Defaults (136-inch reference)
+const AIO_DEFAULTS = {
+  displayDiagonal: 136,
+  resolutionW: 1920,
+  resolutionH: 1080,
+  pixelPitch: 1.56,
+  brightness: 800,
+};
 
 export default function AddNewSeriesModal({
   onClose,
@@ -18,8 +28,17 @@ export default function AddNewSeriesModal({
 }: Props) {
   const [code, setCode] = useState<string>("");
   const [name, setName] = useState<string>("");
+  const [seriesType, setSeriesType] = useState<SeriesType>("standard");
   const [codeError, setCodeError] = useState<string>("");
   const [nameError, setNameError] = useState<string>("");
+
+  // AIO Specs State
+  const [aioDisplayDiagonal, setAioDisplayDiagonal] = useState<number>(AIO_DEFAULTS.displayDiagonal);
+  const [aioResolutionW, setAioResolutionW] = useState<number>(AIO_DEFAULTS.resolutionW);
+  const [aioResolutionH, setAioResolutionH] = useState<number>(AIO_DEFAULTS.resolutionH);
+  const [aioPixelPitch, setAioPixelPitch] = useState<number>(AIO_DEFAULTS.pixelPitch);
+  const [aioBrightness, setAioBrightness] = useState<number>(AIO_DEFAULTS.brightness);
+  const [aioSpecsError, setAioSpecsError] = useState<string>("");
 
   const [step, setStep] = useState<Step>("create");
   const [seriesId, setSeriesId] = useState<string>("");
@@ -40,6 +59,7 @@ export default function AddNewSeriesModal({
     let valid = true;
     setCodeError("");
     setNameError("");
+    setAioSpecsError("");
 
     if (!code.trim()) {
       setCodeError("Series code is required");
@@ -48,6 +68,26 @@ export default function AddNewSeriesModal({
     if (!name.trim()) {
       setNameError("Series name is required");
       valid = false;
+    }
+
+    // Validate AIO specs if AIO series
+    if (seriesType === "aio") {
+      if (aioDisplayDiagonal <= 0 || aioDisplayDiagonal > 500) {
+        setAioSpecsError("Display diagonal must be between 1 and 500 inches");
+        valid = false;
+      }
+      if (aioResolutionW <= 0 || aioResolutionH <= 0) {
+        setAioSpecsError("Resolution must be positive values");
+        valid = false;
+      }
+      if (aioPixelPitch <= 0 || aioPixelPitch > 10) {
+        setAioSpecsError("Pixel pitch must be between 0 and 10 mm");
+        valid = false;
+      }
+      if (aioBrightness <= 0 || aioBrightness > 10000) {
+        setAioSpecsError("Brightness must be between 1 and 10000 nits");
+        valid = false;
+      }
     }
 
     return valid;
@@ -63,6 +103,15 @@ export default function AddNewSeriesModal({
       const result = await SeriesAdminService.initiateSeriesCreation({
         code: code.trim(),
         name: name.trim(),
+        type: seriesType,
+        // Pass AIO specs if AIO series
+        ...(seriesType === "aio" && {
+          aioDisplayDiagonal,
+          aioResolutionW,
+          aioResolutionH,
+          aioPixelPitch,
+          aioBrightness,
+        }),
       });
 
       setSeriesId(result.seriesId);
@@ -117,8 +166,14 @@ export default function AddNewSeriesModal({
         }
       );
 
-      // Move to series specs form
-      setStep("seriesSpecs");
+      // For AIO: auto-create product and go to complete
+      // For Standard: go to series specs form
+      if (seriesType === "aio") {
+        setStep("creating");
+        await createAIOProduct();
+      } else {
+        setStep("seriesSpecs");
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to upload brochure";
@@ -128,13 +183,45 @@ export default function AddNewSeriesModal({
     }
   };
 
-  const handleSeriesSpecsSaved = (): void => {
-    // After series specs are saved, move to adding first model
-    setStep("firstModel");
+  /**
+   * Auto-create default product for AIO series
+   * AIO = one series, one product. No variants.
+   */
+  const createAIOProduct = async (): Promise<void> => {
+    try {
+      await ProductService.createProduct({
+        model: seriesCode, // Model name = series code (e.g., "AIO-L")
+        seriesCode: seriesCode,
+        applicationType: "Indoor (Flat Display)", // AIO is always flat indoor
+        pitch: aioPixelPitch,
+        brightness: aioBrightness,
+        maxPowerPerM2: 0, // Not applicable for AIO
+        avgPowerPerM2: 0, // Not applicable for AIO
+        cabinetWidth: 0, // Not applicable for AIO
+        cabinetHeight: 0, // Not applicable for AIO
+        cabinetResolutionW: aioResolutionW,
+        cabinetResolutionH: aioResolutionH,
+        modulesPerCabinet: 1, // Dummy value, not used
+        product_specifications: [
+          {
+            specification_name: "LED Type",
+            specification_value: "GOB",
+          },
+        ],
+      });
+
+      setStep("complete");
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create AIO product";
+      setError(errorMessage);
+      setStep("creating");
+    }
   };
 
-  const handleFirstModelAdded = (): void => {
-    // After first model is added, show complete message
+  const handleSeriesSpecsSaved = (): void => {
+    // After series specs are saved (standard series only), move to adding first model
+    // This step is skipped for AIO
     setStep("complete");
   };
 
@@ -149,9 +236,6 @@ export default function AddNewSeriesModal({
       setError("");
     } else if (step === "seriesSpecs") {
       setStep("brochure");
-      setError("");
-    } else if (step === "firstModel") {
-      setStep("seriesSpecs");
       setError("");
     }
   };
@@ -179,7 +263,7 @@ export default function AddNewSeriesModal({
                 setCode(e.target.value);
                 setCodeError("");
               }}
-              placeholder="e.g., PFP, PIK"
+              placeholder="e.g., PFP, PIK, AIO-L"
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -213,7 +297,7 @@ export default function AddNewSeriesModal({
                 setName(e.target.value);
                 setNameError("");
               }}
-              placeholder="e.g., Panasonic Full Pitch"
+              placeholder="e.g., Panasonic Full Pitch, AIO 136-inch"
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -229,6 +313,226 @@ export default function AddNewSeriesModal({
               </p>
             )}
           </div>
+
+          {/* Series Type Dropdown */}
+          <div style={{ marginBottom: 20 }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: 8,
+                fontWeight: 500,
+              }}
+            >
+              Series Type
+            </label>
+            <select
+              value={seriesType}
+              onChange={(e) => setSeriesType(e.target.value as SeriesType)}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #ddd",
+                borderRadius: 6,
+                fontSize: 14,
+                boxSizing: "border-box",
+                backgroundColor: "#fff",
+              }}
+            >
+              <option value="standard">Standard (Cabinet-based)</option>
+              <option value="aio">AIO (Fixed Display Unit)</option>
+            </select>
+            <p style={{ margin: "6px 0 0 0", color: "#666", fontSize: 12 }}>
+              {seriesType === "aio"
+                ? "Enter the display specifications below"
+                : "Standard series allow flexible cabinet configuration"}
+            </p>
+          </div>
+
+          {/* AIO SPECS FORM - Only show if AIO selected */}
+          {seriesType === "aio" && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: 16,
+                background: "#f0f8ff",
+                border: "1px solid #005BAC",
+                borderRadius: 8,
+              }}
+            >
+              <h4 style={{ margin: "0 0 16px 0", color: "#005BAC" }}>
+                AIO Display Specifications
+              </h4>
+
+              {/* Display Diagonal */}
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 6,
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  Display Diagonal (inches)
+                </label>
+                <input
+                  type="number"
+                  value={aioDisplayDiagonal}
+                  onChange={(e) => {
+                    setAioDisplayDiagonal(parseFloat(e.target.value) || 0);
+                    setAioSpecsError("");
+                  }}
+                  min="1"
+                  max="500"
+                  step="0.1"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    border: aioSpecsError ? "2px solid #ff4444" : "1px solid #ddd",
+                    borderRadius: 4,
+                    fontSize: 13,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Resolution W × H */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: 6,
+                      fontSize: 13,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Resolution W (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={aioResolutionW}
+                    onChange={(e) => {
+                      setAioResolutionW(parseInt(e.target.value) || 0);
+                      setAioSpecsError("");
+                    }}
+                    min="1"
+                    step="1"
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      border: aioSpecsError ? "2px solid #ff4444" : "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: 6,
+                      fontSize: 13,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Resolution H (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={aioResolutionH}
+                    onChange={(e) => {
+                      setAioResolutionH(parseInt(e.target.value) || 0);
+                      setAioSpecsError("");
+                    }}
+                    min="1"
+                    step="1"
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      border: aioSpecsError ? "2px solid #ff4444" : "1px solid #ddd",
+                      borderRadius: 4,
+                      fontSize: 13,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Pixel Pitch */}
+              <div style={{ marginBottom: 16 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 6,
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  Pixel Pitch (mm)
+                </label>
+                <input
+                  type="number"
+                  value={aioPixelPitch}
+                  onChange={(e) => {
+                    setAioPixelPitch(parseFloat(e.target.value) || 0);
+                    setAioSpecsError("");
+                  }}
+                  min="0.1"
+                  max="10"
+                  step="0.01"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    border: aioSpecsError ? "2px solid #ff4444" : "1px solid #ddd",
+                    borderRadius: 4,
+                    fontSize: 13,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {/* Brightness */}
+              <div style={{ marginBottom: 12 }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: 6,
+                    fontSize: 13,
+                    fontWeight: 500,
+                  }}
+                >
+                  Brightness (nits)
+                </label>
+                <input
+                  type="number"
+                  value={aioBrightness}
+                  onChange={(e) => {
+                    setAioBrightness(parseInt(e.target.value) || 0);
+                    setAioSpecsError("");
+                  }}
+                  min="1"
+                  max="10000"
+                  step="1"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    border: aioSpecsError ? "2px solid #ff4444" : "1px solid #ddd",
+                    borderRadius: 4,
+                    fontSize: 13,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {aioSpecsError && (
+                <p style={{ margin: "8px 0 0 0", color: "#ff4444", fontSize: 12 }}>
+                  {aioSpecsError}
+                </p>
+              )}
+            </div>
+          )}
 
           {error && (
             <div
@@ -522,12 +826,42 @@ export default function AddNewSeriesModal({
         />
       )}
 
-      {step === "firstModel" && (
-        <QuickAddModelForm
-          seriesCode={seriesCode}
-          onSave={handleFirstModelAdded}
-          onCancel={handleBack}
-        />
+      {step === "creating" && (
+        <div>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "40px 20px",
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                border: "4px solid #f3f3f3",
+                borderTop: "4px solid #005BAC",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite",
+                margin: "0 auto 16px",
+              }}
+            />
+            <p
+              style={{
+                margin: 0,
+                color: "#666",
+                fontSize: 14,
+              }}
+            >
+              Creating AIO product...
+            </p>
+            <style>{`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
+          </div>
+        </div>
       )}
 
       {step === "complete" && (
@@ -553,7 +887,7 @@ export default function AddNewSeriesModal({
                 fontSize: 14,
               }}
             >
-              Series <strong>{seriesCode}</strong> has been created with brochure and specs.
+              Series <strong>{seriesCode}</strong> has been created{seriesType === "aio" ? " with default AIO product" : ""}.
             </p>
             <p
               style={{
@@ -562,7 +896,9 @@ export default function AddNewSeriesModal({
                 fontSize: 13,
               }}
             >
-              You can add more models from the series list anytime.
+              {seriesType === "aio"
+                ? "AIO product auto-created with display specs."
+                : "You can add more models from the series list anytime."}
             </p>
           </div>
 

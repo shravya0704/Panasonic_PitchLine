@@ -11,6 +11,7 @@ export interface Series {
   id: string;
   code: string;
   name: string;
+  type?: "standard" | "aio"; // <--- ADDED THIS PROPERTY
   cover_image: string;
   edm_image_url: string;
   created_at?: string;
@@ -60,6 +61,7 @@ export interface SeriesCreationState {
   seriesData?: {
     code: string;
     name: string;
+    type: "standard" | "aio"; // <--- ADDED THIS PROPERTY
   };
   brochurePages?: string[]; // base64 images
   pageCount?: number;
