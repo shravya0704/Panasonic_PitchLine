@@ -20,32 +20,9 @@ import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
 import { panasonicLogoBase64 } from "../../assets/logoBase64";
 
 /**
- * The master orchestrator for generating the final client-facing PDF proposal.
- *
- * PRIORITY 1 FIX (July 26, 2026):
- * - RESTORED: drawProductSpecsPage() call at Page 5
- *
- * PRIORITY 2 FIX (July 26, 2026):
- * - FIXED: Footer loop now only applies to engineering pages (2-7), not brochure pages (8+)
- *
- * PRIORITY 3 FIX (July 26, 2026):
- * - IMPLEMENTED: Real Supabase Auth, RLS policies enabled
- *
- * AIO SERIES SUPPORT (Priority 6 Partial - Simplified Scope):
- * - AIO products get simplified PDF: EDM + Brochure only
- * - No engineering calculations, power diagrams, or viewing distance (AIO is fixed unit)
- * - Detected via product.applicationType === "AIO" or series.type === "aio"
- *
- * @param {Product} product - The configured LED product model
- * @param {ConfigurationResult} result - Mathematical and physical output from configuration engine
- * @param {number} width - The requested screen width
- * @param {number} height - The requested screen height
- * @param {string} [screenPreviewImage] - Base64 UI screenshot
- * @param {string} [viewingDistanceImage] - Base64 viewing distance visualizer
- * @param {object} [proposalData] - Customer and project details
- * @param {string} [proposalId] - Unique system-generated identifier
- * @param {"mtr" | "ft"} [unit="mtr"] - Measurement system
- * @returns {Promise<void>} Resolves when browser triggers file download
+ * AIO DETECTION: Uses product.seriesType === "aio" (now populated from series.type column)
+ * AIO products get simplified PDF: EDM + Brochure only
+ * Standard products get full: EDM + Proposal + Engineering pages + Brochure
  */
 export const generatePdf = async (
   product: Product,
@@ -69,12 +46,16 @@ export const generatePdf = async (
   console.log("Proposal ID:", proposalId);
   console.log("Selected Product:", product);
   console.log("Series Code:", product.seriesCode);
+  console.log("Series Type:", product.seriesType);
 
   const brochure = await getBrochureForSeries(product.seriesCode);
 
+  // ========== AIO DETECTION ==========
+  const isAIO = product.seriesType === "aio";
+
   // ========== AIO BRANCH ==========
-  if (product.applicationType === "AIO") {
-    // AIO: Simplified PDF structure
+  if (isAIO) {
+    // AIO: Simplified PDF structure (EDM + Brochure only)
     // Page 1: EDM Cover
     drawMarketingCoverPage(doc, brochure.coverImage);
 
@@ -180,14 +161,13 @@ export const generatePdf = async (
   // Append Brochure pages at the very end
   addBrochurePages(doc, brochure);
 
-  // Stamp Document Footers across engineering pages only
+  // Stamp Document Footers across engineering pages only (pages 2-7)
   if (proposalId) {
     const totalPages = doc.getNumberOfPages();
-    console.log("TOTAL PDF PAGES:", totalPages);
+    console.log("STANDARD PDF TOTAL PAGES:", totalPages);
 
-    // WHY LOOP FROM 2 TO 7?
-    // Pages 1-7: Marketing + Engineering pages
-    // Pages 8+: Brochure pages (have their own design, no footer stamp)
+    // Pages 2-7: Engineering pages get footer
+    // Pages 8+: Brochure pages (no footer)
     for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(

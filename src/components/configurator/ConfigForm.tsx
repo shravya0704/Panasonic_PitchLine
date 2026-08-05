@@ -20,6 +20,7 @@ interface ConfigFormProps {
   setTargetResolution: (res: "None" | "HD" | "FHD" | "UHD") => void;
   isAIO?: boolean;
 }
+
 export const ConfigForm = ({
   products,
   selectedProduct,
@@ -40,7 +41,7 @@ export const ConfigForm = ({
   isAIO = false,
 }: ConfigFormProps) => {
   const [applicationType, setApplicationType] = useState("");
-
+  
   // Facet States
   const [pitchFilter, setPitchFilter] = useState<string>("");
   const [brightnessFilter, setBrightnessFilter] = useState<string>("");
@@ -49,11 +50,11 @@ export const ConfigForm = ({
 
   const METERS_TO_FEET = 3.28084;
 
-  // Local input string states that capture raw typing completely freely
+  // Local input string states
   const [localWidthStr, setLocalWidthStr] = useState<string>("");
   const [localHeightStr, setLocalHeightStr] = useState<string>("");
 
-  // Initialize local text inputs with parent dimensions on first load or product reset
+  // Initialize local text inputs with parent dimensions
   useEffect(() => {
     if (width > 0 && localWidthStr === "") {
       const targetVal = unit === "mtr" ? width : Number((width * METERS_TO_FEET).toFixed(2));
@@ -68,10 +69,10 @@ export const ConfigForm = ({
     }
   }, [height, unit]);
 
-  // Convert local text smoothly when explicitly toggling units
+  // Convert local text when toggling units
   const handleUnitToggle = (newUnit: "mtr" | "ft") => {
     if (newUnit === unit) return;
-
+    
     const wNum = parseFloat(localWidthStr);
     const hNum = parseFloat(localHeightStr);
 
@@ -89,27 +90,23 @@ export const ConfigForm = ({
 
   // Extract distinct master application categories
   const applicationTypes = useMemo(() => {
-    // 1. Get unique types safely
     const rawTypes = products
       .map(p => p.applicationType)
       .filter(Boolean) as string[];
-
+      
     const uniqueTypes = [...new Set(rawTypes)];
 
-    // 2. Sort them using a foolproof lowercase map
     return uniqueTypes.sort((a, b) => {
-      // Convert to lowercase and remove accidental spaces for the comparison
       const safeA = a.toLowerCase().trim();
       const safeB = b.toLowerCase().trim();
 
-      // Define the exact order we want
       const orderMap: Record<string, number> = {
         "indoor (flat display)": 1,
         "indoor (curve display)": 2,
-        "outdoor": 3
+        "outdoor": 3,
+        "aio": 4
       };
 
-      // If it finds a match, it gets a score 1-3. If not, it drops to the bottom (99).
       const scoreA = orderMap[safeA] || 99;
       const scoreB = orderMap[safeB] || 99;
 
@@ -119,7 +116,6 @@ export const ConfigForm = ({
 
   const pitchRanges = ["<= 1.0mm", "1.1mm - 1.6mm", ">= 1.7mm"];
   const brightnessRanges = ["<= 1000 nits", "> 1000 nits"];
-  const ledTypes = ["COB", "SMD"];
   const serviceTypes = ["Front", "Rear", "Front/Rear"];
 
   // Helper utility to safely scan table attributes
@@ -131,7 +127,6 @@ export const ConfigForm = ({
     return found ? found.specification_value : "";
   };
 
-  // Master recovery method to unfreeze deadlocks smoothly
   const handleClearFilters = () => {
     setPitchFilter("");
     setBrightnessFilter("");
@@ -139,24 +134,45 @@ export const ConfigForm = ({
     setServiceFilter("");
   };
 
-  // Client-side execution grid filtering
+  // FIXED: Product filtering - show all products initially, filter based on selections
   const filteredProducts = useMemo(() => {
     return products
       .filter((p) => {
-        if (applicationType && p.applicationType !== applicationType) return false;
+        // Application Filter - if selected, only show products from that application
+        if (applicationType) {
+          if (p.applicationType !== applicationType) return false;
+        }
 
+        // Pitch Filter
         if (pitchFilter) {
           if (pitchFilter === "<= 1.0mm" && p.pitch > 1.0) return false;
           if (pitchFilter === "1.1mm - 1.6mm" && (p.pitch < 1.1 || p.pitch > 1.6)) return false;
           if (pitchFilter === ">= 1.7mm" && p.pitch < 1.7) return false;
         }
 
+        // Brightness Filter
         if (brightnessFilter) {
           if (brightnessFilter === "<= 1000 nits" && p.brightness > 1000) return false;
           if (brightnessFilter === "> 1000 nits" && p.brightness <= 1000) return false;
         }
 
-        if (ledTypeFilter && getProductSpec(p, "LED Type") !== ledTypeFilter) return false;
+        // LED Type Filter Logic - THIS CONTROLS AIO VISIBILITY
+        // GOB filter shows ONLY AIO products
+        // COB/SMD filters hide AIO products
+        if (ledTypeFilter) {
+          const productLedType = (p as any).led_type || getProductSpec(p, "LED Type") || "";
+
+          if (ledTypeFilter === "COB") {
+            if (productLedType !== "COB" || p.seriesType === "aio") return false;
+          } else if (ledTypeFilter === "SMD") {
+            if (productLedType !== "SMD" || p.seriesType === "aio") return false;
+          } else if (ledTypeFilter === "GOB") {
+            // GOB only shows AIO products
+            if (productLedType !== "GOB" || p.seriesType !== "aio") return false;
+          }
+        }
+
+        // Service Access Filter
         if (serviceFilter && getProductSpec(p, "Service Access") !== serviceFilter) return false;
 
         return true;
@@ -167,13 +183,16 @@ export const ConfigForm = ({
       });
   }, [products, applicationType, pitchFilter, brightnessFilter, ledTypeFilter, serviceFilter]);
 
-  // Clean state cascade when switching major categories
   useEffect(() => {
     handleClearFilters();
   }, [applicationType]);
 
-  // Submit and lock dimensions ONLY when the user clicks the calculate button
   const handleSubmitCalculate = () => {
+    if (isAIO) {
+      onCalculate();
+      return;
+    }
+
     const parsedWidth = parseFloat(localWidthStr);
     const parsedHeight = parseFloat(localHeightStr);
 
@@ -185,11 +204,9 @@ export const ConfigForm = ({
     const wMeters = unit === "mtr" ? parsedWidth : parsedWidth / METERS_TO_FEET;
     const hMeters = unit === "mtr" ? parsedHeight : parsedHeight / METERS_TO_FEET;
 
-    // Push standard dimensions up to engine state
     setWidth(wMeters);
     setHeight(hMeters);
 
-    // Passing raw metric variables immediately into calculations to clear the lag bug
     onCalculate(wMeters, hMeters);
   };
 
@@ -218,51 +235,55 @@ export const ConfigForm = ({
           </select>
         </div>
 
-        {/* Pixel Pitch Range Selection */}
-        <div className="form-group">
-          <label className="section-label">PIXEL PITCH</label>
-          <div className="filter-chips-wrapper">
-            {pitchRanges.map((range) => {
-              const isActive = pitchFilter === range;
-              return (
-                <button
-                  key={range}
-                  type="button"
-                  className={`filter-chip-btn ${isActive ? "active" : ""}`}
-                  onClick={() => setPitchFilter(isActive ? "" : range)}
-                >
-                  {isActive ? `✓ ${range}` : range}
-                </button>
-              );
-            })}
+        {/* Pixel Pitch Range Selection - HIDE FOR AIO */}
+        {!isAIO && (
+          <div className="form-group">
+            <label className="section-label">PIXEL PITCH</label>
+            <div className="filter-chips-wrapper">
+              {pitchRanges.map((range) => {
+                const isActive = pitchFilter === range;
+                return (
+                  <button
+                    key={range}
+                    type="button"
+                    className={`filter-chip-btn ${isActive ? "active" : ""}`}
+                    onClick={() => setPitchFilter(isActive ? "" : range)}
+                  >
+                    {isActive ? `✓ ${range}` : range}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Brightness Threshold Selection */}
-        <div className="form-group">
-          <label className="section-label">BRIGHTNESS</label>
-          <div className="filter-chips-wrapper">
-            {brightnessRanges.map((range) => {
-              const isActive = brightnessFilter === range;
-              return (
-                <button
-                  key={range}
-                  type="button"
-                  className={`filter-chip-btn ${isActive ? "active" : ""}`}
-                  onClick={() => setBrightnessFilter(isActive ? "" : range)}
-                >
-                  {isActive ? `✓ ${range}` : range}
-                </button>
-              );
-            })}
+        {/* Brightness Threshold Selection - HIDE FOR AIO */}
+        {!isAIO && (
+          <div className="form-group">
+            <label className="section-label">BRIGHTNESS</label>
+            <div className="filter-chips-wrapper">
+              {brightnessRanges.map((range) => {
+                const isActive = brightnessFilter === range;
+                return (
+                  <button
+                    key={range}
+                    type="button"
+                    className={`filter-chip-btn ${isActive ? "active" : ""}`}
+                    onClick={() => setBrightnessFilter(isActive ? "" : range)}
+                  >
+                    {isActive ? `✓ ${range}` : range}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* LED Implementation Variant */}
+        {/* LED Type Selection - ALWAYS show COB, SMD, GOB */}
         <div className="form-group">
           <label className="section-label">LED TYPE</label>
           <div className="filter-chips-wrapper">
-            {ledTypes.map((type) => {
+            {["COB", "SMD", "GOB"].map((type) => {
               const isActive = ledTypeFilter === type;
               return (
                 <button
@@ -304,7 +325,7 @@ export const ConfigForm = ({
         <div className="config-section-title">MATCHED MODELS ({filteredProducts.length})</div>
         {filteredProducts.length === 0 ? (
           <div className="filter-fallback-box">
-            No active metrics found matching this profile.
+            No active metrics found matching this profile. 
             <button type="button" className="filter-reset-link" onClick={handleClearFilters}>
               Reset Filters
             </button>
@@ -313,9 +334,9 @@ export const ConfigForm = ({
           <div className="matched-models-grid compact-scroll-list">
             {filteredProducts.map((product) => {
               const isSelected = selectedProduct?.id === product.id;
-              const ledType = getProductSpec(product, "LED Type");
+              const ledType = (product as any).led_type || getProductSpec(product, "LED Type");
               const service = getProductSpec(product, "Service Access");
-
+              
               return (
                 <div
                   key={product.id}
@@ -328,26 +349,25 @@ export const ConfigForm = ({
                     gap: "6px"
                   }}
                 >
-                  {/* TOP ROW: Title on left, Badges on right */}
-                  <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                  <div style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center", 
                     width: "100%",
                     flexWrap: "nowrap",
                     gap: "8px"
                   }}>
-                    <div style={{
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
+                    <div style={{ 
+                      fontWeight: 600, 
+                      fontSize: "14px", 
+                      whiteSpace: "nowrap", 
+                      overflow: "hidden", 
                       textOverflow: "ellipsis",
                       flexGrow: 1
                     }}>
                       {product.model}
                     </div>
-
+                    
                     {(ledType || service) && (
                       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                         {ledType && <span className="card-badge">{ledType}</span>}
@@ -356,17 +376,16 @@ export const ConfigForm = ({
                     )}
                   </div>
 
-                  {/* BOTTOM ROW: Pitch and Brightness forced to one line */}
-                  <div style={{
-                    fontSize: "11.5px",
-                    color: "#555",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
+                  <div style={{ 
+                    fontSize: "11.5px", 
+                    color: "#555", 
+                    whiteSpace: "nowrap", 
+                    overflow: "hidden", 
                     textOverflow: "ellipsis",
                     width: "100%"
                   }}>
-                    Pitch: <strong>{product.pitch} mm</strong>
-                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span>
+                    Pitch: <strong>{product.pitch} mm</strong> 
+                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span> 
                     Brightness: <strong>{product.brightness} nits</strong>
                   </div>
                 </div>
@@ -403,8 +422,7 @@ export const ConfigForm = ({
       {/* SECTION 4: PREVIEW CANVAS TARGET */}
       <div className="config-section">
         <div className="config-section-title">PREVIEW CONTENT</div>
-
-        {/* Content Mode Selector */}
+        
         <div className="form-group">
           <label className="section-label">SELECT CONTENT TYPE</label>
           <div className="content-mode-selector" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
@@ -422,7 +440,6 @@ export const ConfigForm = ({
           </div>
         </div>
 
-        {/* Conditional Upload Input */}
         {contentType === "upload" && (
           <div className="form-group" style={{ marginTop: '16px' }}>
             <label className="upload-card">
@@ -446,6 +463,23 @@ export const ConfigForm = ({
           </div>
         )}
       </div>
+
+      {/* AIO INFO BOX - SHOW ONLY FOR AIO */}
+      {isAIO && (
+        <div className="config-section">
+          <div style={{ 
+            padding: '12px', 
+            background: '#f0f8ff', 
+            border: '1px solid #005BAC',
+            borderRadius: '6px'
+          }}>
+            <h4 style={{ margin: 0, color: '#005BAC' }}>AIO Series (Fixed)</h4>
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px' }}>
+              136-inch (16:9) • 1920×1080 px • 1.56mm pitch • 800 nits
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 5: BOUNDARY ENGINE METRICS - HIDE FOR AIO */}
       {!isAIO && (
@@ -472,7 +506,6 @@ export const ConfigForm = ({
             </div>
           </div>
 
-          {/* Width Workspace Block */}
           <div className="form-group">
             <label className="section-label">DISPLAY WIDTH</label>
             <div className="dimension-card">
@@ -497,7 +530,6 @@ export const ConfigForm = ({
             </div>
           </div>
 
-          {/* Height Workspace Block */}
           <div className="form-group">
             <label className="section-label">DISPLAY HEIGHT</label>
             <div className="dimension-card">
@@ -530,14 +562,14 @@ export const ConfigForm = ({
         <div className="form-group">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
             {["None", "HD", "FHD", "UHD"].map((res) => (
-              <label
-                key={res}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  cursor: "pointer",
-                  fontSize: "14px",
+              <label 
+                key={res} 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "10px", 
+                  cursor: "pointer", 
+                  fontSize: "14px", 
                   color: "#334155",
                   fontWeight: targetResolution === res ? 600 : 400
                 }}
@@ -548,9 +580,9 @@ export const ConfigForm = ({
                   value={res}
                   checked={targetResolution === res}
                   onChange={(e) => setTargetResolution(e.target.value as any)}
-                  style={{
-                    accentColor: "#005BAC",
-                    width: "16px",
+                  style={{ 
+                    accentColor: "#005BAC", 
+                    width: "16px", 
                     height: "16px",
                     cursor: "pointer"
                   }}
@@ -562,18 +594,14 @@ export const ConfigForm = ({
         </div>
       </div>
 
-      {/* Calculate Button */}
       <button
         className="calculate-button"
         onClick={handleSubmitCalculate}
-        disabled={
-          !selectedProduct ||
-          (!isAIO && (localWidthStr === "" || localHeightStr === ""))
-        }
+        disabled={!selectedProduct || (!isAIO && (localWidthStr === "" || localHeightStr === ""))}
       >
         Generate Configuration
       </button>
-
+      
     </div>
   );
 };

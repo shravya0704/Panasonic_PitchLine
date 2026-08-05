@@ -3,48 +3,48 @@ import { Product, ProductSpecification } from "../types/Product";
 import { ProductSpecificationRepository } from "./ProductSpecificationRepository";
 
 export const ProductRepository = {
- async getAll(): Promise<Product[]> {
-  // Fetch products
-  const { data: productsData, error: productsError } = await supabase
-    .from("products")
-    .select("*, product_specifications(specification_name, specification_value)");
+  async getAll(): Promise<Product[]> {
+    // Fetch products
+    const { data: productsData, error: productsError } = await supabase
+      .from("products")
+      .select("*, product_specifications(specification_name, specification_value)");
 
-  if (productsError) throw productsError;
+    if (productsError) throw productsError;
 
-  // Fetch series to build a type map
-  const { data: seriesData, error: seriesError } = await supabase
-    .from("series")
-    .select("code, type");
+    // Fetch series to build a type map
+    const { data: seriesData, error: seriesError } = await supabase
+      .from("series")
+      .select("code, type");
 
-  if (seriesError) throw seriesError;
+    if (seriesError) throw seriesError;
 
-  // Build map: seriesCode → type
-  const seriesTypeMap: Record<string, "standard" | "aio"> = {};
+    // Build map: seriesCode → type
+    const seriesTypeMap: Record<string, "standard" | "aio"> = {};
 
-  (seriesData || []).forEach((s: any) => {
-    seriesTypeMap[s.code] = s.type === "aio" ? "aio" : "standard";
-  });
+    (seriesData || []).forEach((s: any) => {
+      seriesTypeMap[s.code] = s.type === "aio" ? "aio" : "standard";
+    });
 
-  // Attach seriesType to each product
-  return (productsData || []).map((row: any) => ({
-    id: row.id,
-    model: row.model,
-    seriesCode: row.series_code,
-    applicationType: row.application_type,
-    pitch: row.pitch,
-    brightness: row.brightness,
-    maxPowerPerM2: row.max_power_per_m2,
-    avgPowerPerM2: row.avg_power_per_m2,
-    cabinetWidth: row.cabinet_width,
-    cabinetHeight: row.cabinet_height,
-    cabinetResolutionW: row.cabinet_resolution_w,
-    cabinetResolutionH: row.cabinet_resolution_h,
-    modulesPerCabinet: row.modules_per_cabinet,
-    product_specifications: row.product_specifications,
-    seriesType: seriesTypeMap[row.series_code] ?? "standard",
-  }));
-},
-  
+    // Attach seriesType and led_type to each product
+    return (productsData || []).map((row: any) => ({
+      id: row.id,
+      model: row.model,
+      seriesCode: row.series_code,
+      applicationType: row.application_type,
+      pitch: row.pitch,
+      brightness: row.brightness,
+      maxPowerPerM2: row.max_power_per_m2,
+      avgPowerPerM2: row.avg_power_per_m2,
+      cabinetWidth: row.cabinet_width,
+      cabinetHeight: row.cabinet_height,
+      cabinetResolutionW: row.cabinet_resolution_w,
+      cabinetResolutionH: row.cabinet_resolution_h,
+      modulesPerCabinet: row.modules_per_cabinet,
+      product_specifications: row.product_specifications,
+      seriesType: seriesTypeMap[row.series_code] ?? "standard",
+      led_type: row.led_type, // Now recognized by TypeScript
+    }));
+  },
 
   async getById(id: string): Promise<Product | undefined> {
     // Fetch product
@@ -81,12 +81,12 @@ export const ProductRepository = {
       modulesPerCabinet: product.modules_per_cabinet,
       product_specifications: product.product_specifications,
       seriesType: series?.type === "aio" ? "aio" : "standard",
+      led_type: product.led_type,
     };
   },
 
-  // 💡 ATOMIC CREATE: Save both products table AND product_specifications in one go
+  // 💡 ATOMIC CREATE
   async create(product: Product) {
-    // Step 1: Insert into products table
     const { data: insertedProduct, error: productError } = await supabase
       .from("products")
       .insert({
@@ -102,13 +102,13 @@ export const ProductRepository = {
         cabinet_resolution_w: product.cabinetResolutionW,
         cabinet_resolution_h: product.cabinetResolutionH,
         modules_per_cabinet: product.modulesPerCabinet,
+        led_type: product.led_type,
       })
       .select()
       .single();
 
     if (productError) throw productError;
 
-    // Step 2: If specs exist, insert them linked by model name
     if (product.product_specifications && product.product_specifications.length > 0) {
       await ProductSpecificationRepository.createBatch(
         product.model,
@@ -120,9 +120,8 @@ export const ProductRepository = {
     }
   },
 
-  // 💡 ATOMIC UPDATE: Update products table AND sync product_specifications
+  // 💡 ATOMIC UPDATE
   async update(product: Product) {
-    // Step 1: Update products table
     const { error: productError } = await supabase
       .from("products")
       .update({
@@ -138,17 +137,15 @@ export const ProductRepository = {
         cabinet_resolution_w: product.cabinetResolutionW,
         cabinet_resolution_h: product.cabinetResolutionH,
         modules_per_cabinet: product.modulesPerCabinet,
+        led_type: product.led_type,
       })
       .eq("id", product.id);
 
     if (productError) throw productError;
 
-    // Step 2: Delete existing specs for this model and re-insert new ones
     if (product.product_specifications && product.product_specifications.length > 0) {
-      // Delete old specs for this model
       await ProductSpecificationRepository.deleteByModel(product.model);
 
-      // Insert new specs
       await ProductSpecificationRepository.createBatch(
         product.model,
         product.product_specifications.map((spec) => ({

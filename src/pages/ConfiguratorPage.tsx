@@ -199,6 +199,7 @@ function ConfiguratorPage() {
                             setUnit={setUnit}
                             targetResolution={targetResolution}
                             setTargetResolution={setTargetResolution}
+                            isAIO={isAIO}
                         />
                     </div>
 
