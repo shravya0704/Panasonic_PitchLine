@@ -11,6 +11,7 @@ interface Props {
 }
 
 export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Props) {
+  const [seriesType, setSeriesType] = useState<"standard" | "aio" | null>(null);
   const [form, setForm] = useState({
     model: "",
     pitch: "",
@@ -22,6 +23,8 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
     modulesPerCabinet: "",
     maxPowerPerM2: "",
     avgPowerPerM2: "",
+    ledType: "",
+    aioDisplayDiagonal: "", // NEW: For AIO products
   });
 
   const [overrides, setOverrides] = useState<ModelSpecOverrides>({});
@@ -34,6 +37,35 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch series type on mount
+  useEffect(() => {
+    const fetchSeriesType = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/series?code=eq.${seriesCode}&select=type`,
+          {
+            headers: {
+              "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+          const type = data[0].type as "standard" | "aio";
+          setSeriesType(type);
+          // Auto-set LED type for AIO
+          if (type === "aio") {
+            setForm(prev => ({ ...prev, ledType: "GOB" }));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch series type:", error);
+      }
+    };
+    fetchSeriesType();
+  }, [seriesCode]);
 
   const update = (field: string, value: string) => {
     setForm({ ...form, [field]: value });
@@ -88,6 +120,14 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
       setError("Avg Power must be greater than zero.");
       return;
     }
+    if (!form.ledType.trim()) {
+      setError("LED Type is required.");
+      return;
+    }
+    if (seriesType === "aio" && (!form.aioDisplayDiagonal || parseFloat(form.aioDisplayDiagonal) <= 0)) {
+      setError("AIO Display Diagonal must be greater than zero.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -104,7 +144,7 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
         id: "",
         model: form.model,
         seriesCode: seriesCode,
-        applicationType: "Indoor", // Can be modified later if needed
+        applicationType: seriesType === "aio" ? "AIO" : "Indoor", // Set to AIO if series is AIO
         pitch: parseFloat(form.pitch),
         brightness: parseInt(form.brightness),
         maxPowerPerM2: parseFloat(form.maxPowerPerM2),
@@ -115,6 +155,8 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
         cabinetResolutionH: parseInt(form.cabinetResolutionH),
         modulesPerCabinet: parseInt(form.modulesPerCabinet),
         product_specifications: specs,
+        led_type: form.ledType, // NEW: Save LED type
+        aio_display_diagonal: seriesType === "aio" ? parseFloat(form.aioDisplayDiagonal) : undefined, // NEW: Save AIO diagonal
       };
 
       // Save to database
@@ -136,6 +178,25 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
       <p style={{ color: "#666", fontSize: "14px" }}>
         Enter the model variant details. Extended specs will be auto-filled from series defaults.
       </p>
+
+      {/* Series Type Info */}
+      {seriesType && (
+        <div
+          style={{
+            background: seriesType === "aio" ? "#f0f8ff" : "#f5f9ff",
+            border: `1px solid ${seriesType === "aio" ? "#005BAC" : "#cbd5e1"}`,
+            padding: "12px",
+            borderRadius: "6px",
+            marginBottom: "20px",
+            fontSize: "13px",
+            color: seriesType === "aio" ? "#005BAC" : "#334155",
+          }}
+        >
+          {seriesType === "aio" 
+            ? "✓ AIO Series - Fixed specs. LED Type will be set to GOB." 
+            : "Standard Series - Select LED Type (COB or SMD)"}
+        </div>
+      )}
 
       {error && (
         <div
@@ -173,6 +234,55 @@ export default function QuickAddModelForm({ seriesCode, onSave, onCancel }: Prop
             placeholder="e.g., 1.25"
           />
         </Field>
+      </div>
+
+      {/* LED TYPE - NEW FIELD */}
+      <h3 style={{ marginTop: 25, marginBottom: 15, color: "#005BAC" }}>LED Implementation</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+        <Field label="LED Type *">
+          {seriesType === "aio" ? (
+            <div
+              style={{
+                padding: "10px 12px",
+                background: "#f0f8ff",
+                border: "1px solid #005BAC",
+                borderRadius: "6px",
+                color: "#005BAC",
+                fontWeight: 500,
+              }}
+            >
+              GOB (Auto-set for AIO)
+            </div>
+          ) : (
+            <select
+              value={form.ledType}
+              onChange={(e) => update("ledType", e.target.value)}
+              style={{
+                padding: "10px 12px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "6px",
+                fontSize: "14px",
+              }}
+            >
+              <option value="">Select LED Type</option>
+              <option value="COB">COB</option>
+              <option value="SMD">SMD</option>
+            </select>
+          )}
+        </Field>
+
+        {/* AIO Display Diagonal - Only for AIO series */}
+        {seriesType === "aio" && (
+          <Field label="Display Diagonal (inches) *">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={form.aioDisplayDiagonal}
+              onChange={(e) => update("aioDisplayDiagonal", e.target.value)}
+              placeholder="e.g., 136"
+            />
+          </Field>
+        )}
       </div>
 
       <h3 style={{ marginTop: 25, marginBottom: 15, color: "#005BAC" }}>Cabinet Configuration</h3>

@@ -23,6 +23,8 @@ interface ScreenPreviewProps {
   unit: "mtr" | "ft";
   targetResolution?: "None" | "HD" | "FHD" | "UHD";
   isAIO?: boolean;
+  aioDisplayDiagonal?: number;
+  ledType?: string;
 }
 
 const STANDARD_RESOLUTIONS = {
@@ -47,7 +49,9 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     contentType, 
     unit, 
     targetResolution = "None",
-    isAIO = false 
+    isAIO = false,
+    aioDisplayDiagonal,
+    ledType
   }, ref) => {
     // ==========================================
     // AIO DISPLAY SIMPLIFIED PREVIEW
@@ -69,7 +73,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             fontWeight: 'bold'
           }}
         >
-          136-inch AIO Display
+          {aioDisplayDiagonal}-inch AIO Display {ledType === 'GOB' && '(GOB)'}
         </div>
       );
     }
@@ -368,6 +372,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               <div style={{ fontSize: 13, color: "#475569" }}>Pixel Pitch: {pixelPitch} mm</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Brightness: {brightness} nits</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Diagonal: {diagonalText} in</div>
+              <div style={{ fontSize: 13, color: "#475569" }}>LED Type: {ledType || 'N/A'}</div>
               <div style={{ fontSize: 13, color: "#475569" }}>Viewing Distance: {viewingDistance} {unit}</div>
             </div>
 

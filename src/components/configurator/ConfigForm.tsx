@@ -41,7 +41,7 @@ export const ConfigForm = ({
   isAIO = false,
 }: ConfigFormProps) => {
   const [applicationType, setApplicationType] = useState("");
-  
+
   // Facet States
   const [pitchFilter, setPitchFilter] = useState<string>("");
   const [brightnessFilter, setBrightnessFilter] = useState<string>("");
@@ -72,7 +72,7 @@ export const ConfigForm = ({
   // Convert local text when toggling units
   const handleUnitToggle = (newUnit: "mtr" | "ft") => {
     if (newUnit === unit) return;
-    
+
     const wNum = parseFloat(localWidthStr);
     const hNum = parseFloat(localHeightStr);
 
@@ -93,7 +93,7 @@ export const ConfigForm = ({
     const rawTypes = products
       .map(p => p.applicationType)
       .filter(Boolean) as string[];
-      
+
     const uniqueTypes = [...new Set(rawTypes)];
 
     return uniqueTypes.sort((a, b) => {
@@ -325,7 +325,7 @@ export const ConfigForm = ({
         <div className="config-section-title">MATCHED MODELS ({filteredProducts.length})</div>
         {filteredProducts.length === 0 ? (
           <div className="filter-fallback-box">
-            No active metrics found matching this profile. 
+            No active metrics found matching this profile.
             <button type="button" className="filter-reset-link" onClick={handleClearFilters}>
               Reset Filters
             </button>
@@ -336,7 +336,7 @@ export const ConfigForm = ({
               const isSelected = selectedProduct?.id === product.id;
               const ledType = (product as any).led_type || getProductSpec(product, "LED Type");
               const service = getProductSpec(product, "Service Access");
-              
+
               return (
                 <div
                   key={product.id}
@@ -349,25 +349,25 @@ export const ConfigForm = ({
                     gap: "6px"
                   }}
                 >
-                  <div style={{ 
-                    display: "flex", 
-                    justifyContent: "space-between", 
-                    alignItems: "center", 
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     width: "100%",
                     flexWrap: "nowrap",
                     gap: "8px"
                   }}>
-                    <div style={{ 
-                      fontWeight: 600, 
-                      fontSize: "14px", 
-                      whiteSpace: "nowrap", 
-                      overflow: "hidden", 
+                    <div style={{
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
                       textOverflow: "ellipsis",
                       flexGrow: 1
                     }}>
                       {product.model}
                     </div>
-                    
+
                     {(ledType || service) && (
                       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
                         {ledType && <span className="card-badge">{ledType}</span>}
@@ -376,16 +376,16 @@ export const ConfigForm = ({
                     )}
                   </div>
 
-                  <div style={{ 
-                    fontSize: "11.5px", 
-                    color: "#555", 
-                    whiteSpace: "nowrap", 
-                    overflow: "hidden", 
+                  <div style={{
+                    fontSize: "11.5px",
+                    color: "#555",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
                     textOverflow: "ellipsis",
                     width: "100%"
                   }}>
-                    Pitch: <strong>{product.pitch} mm</strong> 
-                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span> 
+                    Pitch: <strong>{product.pitch} mm</strong>
+                    <span style={{ margin: "0 6px", color: "#ccc" }}>•</span>
                     Brightness: <strong>{product.brightness} nits</strong>
                   </div>
                 </div>
@@ -422,7 +422,7 @@ export const ConfigForm = ({
       {/* SECTION 4: PREVIEW CANVAS TARGET */}
       <div className="config-section">
         <div className="config-section-title">PREVIEW CONTENT</div>
-        
+
         <div className="form-group">
           <label className="section-label">SELECT CONTENT TYPE</label>
           <div className="content-mode-selector" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
@@ -465,17 +465,17 @@ export const ConfigForm = ({
       </div>
 
       {/* AIO INFO BOX - SHOW ONLY FOR AIO */}
-      {isAIO && (
+      {isAIO && selectedProduct && (
         <div className="config-section">
-          <div style={{ 
-            padding: '12px', 
-            background: '#f0f8ff', 
+          <div style={{
+            padding: '12px',
+            background: '#f0f8ff',
             border: '1px solid #005BAC',
             borderRadius: '6px'
           }}>
             <h4 style={{ margin: 0, color: '#005BAC' }}>AIO Series (Fixed)</h4>
             <p style={{ margin: '8px 0 0 0', fontSize: '12px' }}>
-              136-inch (16:9) • 1920×1080 px • 1.56mm pitch • 800 nits
+              {selectedProduct.cabinetResolutionW || 1920}×{selectedProduct.cabinetResolutionH || 1080} px • {selectedProduct.pitch || 1.56}mm pitch • {selectedProduct.brightness || 800} nits
             </p>
           </div>
         </div>
@@ -562,14 +562,14 @@ export const ConfigForm = ({
         <div className="form-group">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
             {["None", "HD", "FHD", "UHD"].map((res) => (
-              <label 
-                key={res} 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "10px", 
-                  cursor: "pointer", 
-                  fontSize: "14px", 
+              <label
+                key={res}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  cursor: "pointer",
+                  fontSize: "14px",
                   color: "#334155",
                   fontWeight: targetResolution === res ? 600 : 400
                 }}
@@ -580,9 +580,9 @@ export const ConfigForm = ({
                   value={res}
                   checked={targetResolution === res}
                   onChange={(e) => setTargetResolution(e.target.value as any)}
-                  style={{ 
-                    accentColor: "#005BAC", 
-                    width: "16px", 
+                  style={{
+                    accentColor: "#005BAC",
+                    width: "16px",
                     height: "16px",
                     cursor: "pointer"
                   }}
@@ -601,7 +601,7 @@ export const ConfigForm = ({
       >
         Generate Configuration
       </button>
-      
+
     </div>
   );
 };

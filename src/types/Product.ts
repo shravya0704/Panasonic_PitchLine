@@ -5,22 +5,24 @@ export interface ProductSpecification {
   specification_value: string;
 }
 
+// File: src/types/Product.ts
+
 export interface Product {
   id: string;
   model: string;
   seriesCode: string;
   applicationType: string;
   pitch: number;
+  brightness: number;
   maxPowerPerM2: number;
   avgPowerPerM2: number;
-  brightness: number;
   cabinetWidth: number;
   cabinetHeight: number;
   cabinetResolutionW: number;
   cabinetResolutionH: number;
   modulesPerCabinet: number;
-  led_type?: string | null;
-  seriesType?: "standard" | "aio";
-  // 💡 NEW: Attach the dynamic specs array
-  product_specifications?: ProductSpecification[];
+  product_specifications?: any[];
+  seriesType?: string;  // "standard" | "aio"
+  led_type?: string;  // "COB" | "SMD" | "GOB"
+  aio_display_diagonal?: number;  // Diagonal in inches for AIO products
 }

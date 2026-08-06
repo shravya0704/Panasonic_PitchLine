@@ -80,23 +80,29 @@ function ConfiguratorPage() {
 
         // AIO: Fixed specs, no calculation needed
         if (isAIO) {
+            // AIO diagonal is stored directly in the product
+            const aioDisplayDiagonal = (selectedProduct as any)?.aio_display_diagonal || 136;
+
+            const actualW = selectedProduct?.cabinetWidth || 3036.8;
+            const actualH = selectedProduct?.cabinetHeight || 1825.8;
+
             const aioResult: ConfigurationResult = {
                 cabinetsW: 1,
                 cabinetsH: 1,
                 totalCabinets: 1,
                 totalModules: 1,
-                actualWidth: 3036.8,
-                actualHeight: 1825.8,
-                resolutionW: 1920,
-                resolutionH: 1080,
-                totalArea: 5.06,
-                maximumPower: 2500,
-                averagePower: 833,
+                actualWidth: actualW,
+                actualHeight: actualH,
+                resolutionW: selectedProduct?.cabinetResolutionW || 1920,
+                resolutionH: selectedProduct?.cabinetResolutionH || 1080,
+                totalArea: Number(((actualW * actualH) / 1000000).toFixed(2)),
+                maximumPower: selectedProduct?.maxPowerPerM2 || 2500,
+                averagePower: selectedProduct?.avgPowerPerM2 || 833,
                 maximumHeat: 8537,
                 averageHeat: 2843,
                 maximumHeatBTU: 8537,
                 averageHeatBTU: 2843,
-                diagonalInches: 136,
+                diagonalInches: aioDisplayDiagonal, // ✅ Read from product, not calculated
                 aspectRatio: "16:9",
             };
             setResult(aioResult);
@@ -222,6 +228,9 @@ function ConfiguratorPage() {
                                         contentType={contentType}
                                         unit={unit}
                                         targetResolution={targetResolution}
+                                        isAIO={isAIO}
+                                        aioDisplayDiagonal={selectedProduct?.aio_display_diagonal || 136}
+                                        ledType={selectedProduct?.led_type || ""}
                                     />
                                 </div>
 

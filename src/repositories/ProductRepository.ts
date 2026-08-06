@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase";
-import { Product, ProductSpecification } from "../types/Product";
+import { Product } from "../types/Product";
 import { ProductSpecificationRepository } from "./ProductSpecificationRepository";
 
 export const ProductRepository = {
@@ -25,7 +25,7 @@ export const ProductRepository = {
       seriesTypeMap[s.code] = s.type === "aio" ? "aio" : "standard";
     });
 
-    // Attach seriesType and led_type to each product
+    // Attach seriesType, led_type, and aio_display_diagonal to each product
     return (productsData || []).map((row: any) => ({
       id: row.id,
       model: row.model,
@@ -42,7 +42,8 @@ export const ProductRepository = {
       modulesPerCabinet: row.modules_per_cabinet,
       product_specifications: row.product_specifications,
       seriesType: seriesTypeMap[row.series_code] ?? "standard",
-      led_type: row.led_type, // Now recognized by TypeScript
+      led_type: row.led_type,
+      aio_display_diagonal: row.aio_display_diagonal,
     }));
   },
 
@@ -82,11 +83,12 @@ export const ProductRepository = {
       product_specifications: product.product_specifications,
       seriesType: series?.type === "aio" ? "aio" : "standard",
       led_type: product.led_type,
+      aio_display_diagonal: product.aio_display_diagonal,
     };
   },
 
   // 💡 ATOMIC CREATE
-  async create(product: Omit<Product, 'id'>) {
+  async create(product: Omit<Product, "id">) {
     const { data: insertedProduct, error: productError } = await supabase
       .from("products")
       .insert({
@@ -103,6 +105,7 @@ export const ProductRepository = {
         cabinet_resolution_h: product.cabinetResolutionH,
         modules_per_cabinet: product.modulesPerCabinet,
         led_type: product.led_type,
+        aio_display_diagonal: (product as any).aio_display_diagonal,
       })
       .select()
       .single();
@@ -138,6 +141,7 @@ export const ProductRepository = {
         cabinet_resolution_h: product.cabinetResolutionH,
         modules_per_cabinet: product.modulesPerCabinet,
         led_type: product.led_type,
+        aio_display_diagonal: (product as any).aio_display_diagonal,
       })
       .eq("id", product.id);
 

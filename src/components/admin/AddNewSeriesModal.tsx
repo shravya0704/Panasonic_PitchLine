@@ -202,6 +202,8 @@ export default function AddNewSeriesModal({
         cabinetResolutionW: aioResolutionW,
         cabinetResolutionH: aioResolutionH,
         modulesPerCabinet: 1, // Dummy value, not used
+        led_type: "GOB",                          // ← UPDATED
+        aio_display_diagonal: aioDisplayDiagonal,  // ← UPDATED
         product_specifications: [
           {
             specification_name: "LED Type",

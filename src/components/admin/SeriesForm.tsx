@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SeriesSpecificationService, SeriesSpecDefaults } from "../../services/Seriesspecificationservice";
 import AdminButton from "./ui/AdminButton";
 
@@ -8,8 +8,13 @@ interface Props {
   onCancel: () => void;
 }
 
+interface SeriesSpecDefaultsWithAIO extends SeriesSpecDefaults {
+  aioDisplayDiagonal?: string;
+}
+
 export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
-  const [form, setForm] = useState<SeriesSpecDefaults>({
+  const [seriesType, setSeriesType] = useState<"standard" | "aio" | null>(null);
+  const [form, setForm] = useState<SeriesSpecDefaultsWithAIO>({
     pixelConfiguration: "",
     cabinetMaterial: "",
     serviceAccess: "",
@@ -31,9 +36,12 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
     operatingTemp: "",
     operatingHumidity: "",
     ipRating: "",
+    
+    aioDisplayDiagonal: "", // NEW: AIO field
   });
 
   const [expandedSections, setExpandedSections] = useState({
+    aio: true,
     physical: true,
     optical: true,
     electrical: true,
@@ -44,7 +52,31 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const update = (field: keyof SeriesSpecDefaults, value: string) => {
+  // Fetch series type on mount
+  useEffect(() => {
+    const fetchSeriesType = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/series?code=eq.${seriesCode}&select=type`,
+          {
+            headers: {
+              "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+          setSeriesType(data[0].type as "standard" | "aio");
+        }
+      } catch (error) {
+        console.error("Failed to fetch series type:", error);
+      }
+    };
+    fetchSeriesType();
+  }, [seriesCode]);
+
+  const update = (field: keyof SeriesSpecDefaultsWithAIO, value: string) => {
     setForm({ ...form, [field]: value });
   };
 
@@ -69,11 +101,43 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
       setError("Service Access is required.");
       return;
     }
+    
+    // AIO-specific validation
+    if (seriesType === "aio" && (!form.aioDisplayDiagonal || parseFloat(form.aioDisplayDiagonal) <= 0)) {
+      setError("AIO Display Diagonal is required and must be greater than zero.");
+      return;
+    }
 
     try {
       setLoading(true);
       setError(null);
+      
+      // Save series defaults
       await SeriesSpecificationService.saveSeriesDefaults(seriesCode, form);
+      
+      // If AIO, also save diagonal to series table
+      if (seriesType === "aio" && form.aioDisplayDiagonal) {
+        const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = import.meta.env;
+        const response = await fetch(
+          `${VITE_SUPABASE_URL}/rest/v1/series?code=eq.${seriesCode}`,
+          {
+            method: "PATCH",
+            headers: {
+              "apikey": VITE_SUPABASE_ANON_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              aio_display_diagonal: parseFloat(form.aioDisplayDiagonal),
+            }),
+          }
+        );
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to save AIO diagonal");
+        }
+      }
+      
       onSave();
     } catch (err: any) {
       setError(err.message || "Failed to save series defaults.");
@@ -105,6 +169,27 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
         >
           {error}
         </div>
+      )}
+
+      {/* AIO DISPLAY SPECIFICATIONS - Only for AIO series */}
+      {seriesType === "aio" && (
+        <CollapsibleSection
+          title="AIO Display Specifications"
+          expanded={expandedSections.aio}
+          onToggle={() => toggleSection("aio")}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
+            <Field label="Display Diagonal (inches) *">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={form.aioDisplayDiagonal}
+                onChange={(e) => update("aioDisplayDiagonal", e.target.value)}
+                placeholder="e.g., 136"
+              />
+            </Field>
+          </div>
+        </CollapsibleSection>
       )}
 
       {/* PHYSICAL PARAMETERS */}
