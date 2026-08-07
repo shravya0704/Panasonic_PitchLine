@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Product } from "../../types/Product";
-import { SeriesSpecificationService } from "../../services/SeriesSpecificationService";
 import { ProductRepository } from "../../repositories/ProductRepository";
 import AdminButton from "./ui/AdminButton";
+import { SeriesSpecificationService, SeriesSpecDefaults, ModelSpecOverrides } from "../../services/SeriesSpecificationService";
 
 interface Props {
   seriesCode: string;
