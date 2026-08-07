@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { SeriesSpecificationService, SeriesSpecDefaults } from "../../services/Seriesspecificationservice";
+import { SeriesSpecificationService, SeriesSpecDefaults } from "../../services/SeriesSpecificationService";
 import AdminButton from "./ui/AdminButton";
 
 interface Props {
@@ -76,7 +76,7 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
     fetchSeriesType();
   }, [seriesCode]);
 
-  const update = (field: keyof SeriesSpecDefaultsWithAIO, value: string) => {
+  const update = (field: keyof SeriesSpecDefaults, value: string) => {
     setForm({ ...form, [field]: value });
   };
 
@@ -184,7 +184,7 @@ export default function SeriesForm({ seriesCode, onSave, onCancel }: Props) {
                 type="text"
                 inputMode="decimal"
                 value={form.aioDisplayDiagonal}
-                onChange={(e) => update("aioDisplayDiagonal", e.target.value)}
+                onChange={(e) => update("aioDisplayDiagonal" as any, e.target.value)}
                 placeholder="e.g., 136"
               />
             </Field>

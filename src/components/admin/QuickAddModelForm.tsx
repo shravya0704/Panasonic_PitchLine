@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Product } from "../../types/Product";
-import { SeriesSpecificationService, ModelSpecOverrides } from "../../services/Seriesspecificationservice";
+import { SeriesSpecificationService } from "../../services/SeriesSpecificationService";
 import { ProductRepository } from "../../repositories/ProductRepository";
 import AdminButton from "./ui/AdminButton";
 
