@@ -8,7 +8,7 @@ import SeriesForm from "./SeriesForm";
 import AdminModal from "./AdminModal";
 import { SeriesAdminRepository } from "../../repositories/SeriesAdminRepository";
 import { BrochureUploadRepository } from "../../repositories/BrochureUploadRepository";
-import { SeriesSpecificationService } from "../../services/Seriesspecificationservice";
+import { SeriesSpecificationService } from "../../services/SeriesSpecificationService";
 import { Series } from "../../types/SeriesAdmin";
 
 interface SeriesWithDetails extends Series {
