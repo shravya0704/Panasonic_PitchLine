@@ -119,7 +119,7 @@ export const BrochureUploadService = {
           .from("brochures")
           .upload(filePath, blob, {
             cacheControl: "3600",
-            upsert: false,
+            upsert: true,
           });
 
         if (uploadError) {

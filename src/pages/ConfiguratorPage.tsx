@@ -97,7 +97,7 @@ function ConfiguratorPage() {
                 resolutionH: selectedProduct?.cabinetResolutionH || 1080,
                 totalArea: Number(((actualW * actualH) / 1000000).toFixed(2)),
                 maximumPower: selectedProduct?.maxPowerPerM2 || 2500,
-                averagePower: selectedProduct?.avgPowerPerM2 || 833,
+                averagePower: (selectedProduct?.maxPowerPerM2 || 2500) * 0.3,
                 maximumHeat: 8537,
                 averageHeat: 2843,
                 maximumHeatBTU: 8537,

@@ -97,8 +97,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
     
     // ======================================================
     // RESPONSIVE PREVIEW SCALE
-    // Scales the complete engineering preview on smaller
-    // screens while keeping the desktop layout unchanged.
     // ======================================================
     const marginLeft = 80;
     const marginRight = 210;
@@ -197,7 +195,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
           {model && <div className="preview-model-badge">{model}</div>}
         </div>
 
-        {/* Outer wrapper tailored for responsive scaling without flex clipping */}
+        {/* Outer wrapper */}
         <div
           style={{
             display: "flex",
@@ -265,16 +263,6 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     overflow: "visible",
                   }}
                 >
-                  {isCurved && (
-                    <path
-                      d="M 2 20 Q 18 2 50 2 L 98 2 Q 82 50 98 98 L 50 98 Q 18 98 2 80 Q 8 50 2 20"
-                      fill="none"
-                      stroke="rgba(255,255,255,.55)"
-                      strokeWidth="1.8"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  )}
-
                   <line
                     x1="4%"
                     y1="4%"
@@ -297,7 +285,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
                     transform: "translate(-50%, -50%)",
                     background: "rgba(255,255,255,0.92)",
                     border: "1px solid #CBD5E1",
-                    borderRadius: isCurved ? "90px / 18px" : "0px",
+                    borderRadius: "0px",
                     padding: "3px 10px",
                     fontSize: 12,
                     fontWeight: 700,
@@ -379,12 +367,12 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
             {/* SILHOUETTE */}
             <img
               src={human}
-              alt="Human Scale"
+              alt="Human Scale (1.8m reference)"
               style={{
                 position: "absolute",
                 left: marginLeft + screenWidthPx + 40,
                 bottom: marginBottom,
-                height: Math.min(screenHeightPx * 0.42, 125),
+                height: Math.max(20, Math.min(safeHeight * scale, 200)),
                 opacity: 0.35
               }}
             />
@@ -398,7 +386,7 @@ export const ScreenPreview = forwardRef<HTMLDivElement, ScreenPreviewProps>(
               color: "#64748B",
               fontWeight: 600
             }}>
-              Human Scale Reference
+              Human Scale Reference (1.8m)
             </div>
           </div>
         </div>

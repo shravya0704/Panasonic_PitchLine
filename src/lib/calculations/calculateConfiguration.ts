@@ -60,12 +60,11 @@ export const calculateConfiguration = (
     actualWidth * actualHeight;
 
   const maximumPower =
-    totalArea *
+    totalCabinets *
     product.maxPowerPerM2;
 
   const averagePower =
-    totalArea *
-    product.avgPowerPerM2;
+    maximumPower * 0.3;
 
   const maximumHeat =
     maximumPower;
@@ -82,25 +81,25 @@ export const calculateConfiguration = (
       Math.pow(actualHeight * 1000, 2)
     ) / 25.4;
 
-    // Calculate the simplified screen aspect ratio from the final LED resolution.
-// Examples:
-// 3840 × 2160 → 16:9
-// 4800 × 1200 → 4:1
-// Using the final resolution avoids floating-point rounding differences
-// that can occur when deriving the ratio from physical dimensions.
-const gcd = (a: number, b: number): number => {
-  while (b !== 0) {
-    const temp = b;
-    b = a % b;
-    a = temp;
-  }
-  return a;
-};
+  // Calculate the simplified screen aspect ratio from the final LED resolution.
+  // Examples:
+  // 3840 × 2160 → 16:9
+  // 4800 × 1200 → 4:1
+  // Using the final resolution avoids floating-point rounding differences
+  // that can occur when deriving the ratio from physical dimensions.
+  const gcd = (a: number, b: number): number => {
+    while (b !== 0) {
+      const temp = b;
+      b = a % b;
+      a = temp;
+    }
+    return a;
+  };
 
-const divisor = gcd(resolutionW, resolutionH);
+  const divisor = gcd(resolutionW, resolutionH);
 
-const aspectRatio =
-  `${resolutionW / divisor}:${resolutionH / divisor}`;
+  const aspectRatio =
+    `${resolutionW / divisor}:${resolutionH / divisor}`;
 
   // Multiply wattage by 3.412 to convert watts directly into BTU/hr.
   // This is a standard conversion factor critical for AV integrators to plan HVAC cooling loads.
