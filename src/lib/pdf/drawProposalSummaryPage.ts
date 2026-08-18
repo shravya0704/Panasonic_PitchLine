@@ -1,13 +1,10 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 
-// Helper: Capitalizes the first letter of each word (Title Case)
+// Helper: Preserves user input exactly as entered
 const formatTitleCase = (text: string) => {
   if (!text) return "";
-  return text
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
+  return text;
 };
 
 export const drawProposalSummaryPage = (
@@ -70,7 +67,7 @@ export const drawProposalSummaryPage = (
     { label: "Project Name:", value: formatTitleCase(proposalData.projectName) },
     { label: "Customer Name:", value: formatTitleCase(proposalData.customerName) },
     { label: "Company Name:", value: formatTitleCase(proposalData.companyName) },
-    { label: "Email:", value: proposalData.email?.toLowerCase() },
+    { label: "Email:", value: proposalData.email },
     { label: "Generated On:", value: new Date().toLocaleDateString() }
   ];
 
@@ -128,19 +125,18 @@ export const drawProposalSummaryPage = (
     doc.text(item.label, xPos, card2Y + 30);
 
     // Value
-    // Value
-doc.setFont("helvetica", "bold");
-doc.setFontSize(11);
-doc.setTextColor(50, 50, 50);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(50, 50, 50);
 
-// Constrain long values (especially the model name)
-// so they remain within their allotted column.
-const wrappedValue = doc.splitTextToSize(item.value, colWidth - 3);
+    // Constrain long values (especially the model name)
+    // so they remain within their allotted column.
+    const wrappedValue = doc.splitTextToSize(item.value, colWidth - 3);
 
-doc.text(
-  wrappedValue,
-  xPos,
-  card2Y + 40
-);
+    doc.text(
+      wrappedValue,
+      xPos,
+      card2Y + 40
+    );
   });
 };
