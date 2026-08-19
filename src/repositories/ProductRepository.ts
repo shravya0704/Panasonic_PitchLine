@@ -25,7 +25,7 @@ export const ProductRepository = {
       seriesTypeMap[s.code] = s.type === "aio" ? "aio" : "standard";
     });
 
-    // Attach seriesType, led_type, and aio_display_diagonal to each product
+    // Attach seriesType, led_type, aio_display_diagonal, and screenWeightPerM2 to each product
     return (productsData || []).map((row: any) => ({
       id: row.id,
       model: row.model,
@@ -44,6 +44,9 @@ export const ProductRepository = {
       seriesType: seriesTypeMap[row.series_code] ?? "standard",
       led_type: row.led_type,
       aio_display_diagonal: row.aio_display_diagonal,
+      screenWeightPerM2: row.screenWeightPerM2 
+        ? Number(row.screenWeightPerM2) 
+        : undefined,
     }));
   },
 
@@ -84,6 +87,9 @@ export const ProductRepository = {
       seriesType: series?.type === "aio" ? "aio" : "standard",
       led_type: product.led_type,
       aio_display_diagonal: product.aio_display_diagonal,
+      screenWeightPerM2: product.screenWeightPerM2 
+        ? Number(product.screenWeightPerM2) 
+        : undefined,
     };
   },
 
@@ -106,6 +112,7 @@ export const ProductRepository = {
         modules_per_cabinet: product.modulesPerCabinet,
         led_type: product.led_type,
         aio_display_diagonal: (product as any).aio_display_diagonal,
+        screenWeightPerM2: product.screenWeightPerM2,
       })
       .select()
       .single();
@@ -142,6 +149,7 @@ export const ProductRepository = {
         modules_per_cabinet: product.modulesPerCabinet,
         led_type: product.led_type,
         aio_display_diagonal: (product as any).aio_display_diagonal,
+        screenWeightPerM2: product.screenWeightPerM2,
       })
       .eq("id", product.id);
 

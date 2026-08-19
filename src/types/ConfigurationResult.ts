@@ -1,3 +1,5 @@
+// src/types/ConfigurationResult.ts
+
 export interface ConfigurationResult {
   cabinetsW: number;
   cabinetsH: number;
@@ -14,17 +16,17 @@ export interface ConfigurationResult {
   totalArea: number;
 
   maximumPower: number;
-
   averagePower: number;
 
   maximumHeat: number;
-
   averageHeat: number;
 
   maximumHeatBTU: number;
-
   averageHeatBTU: number;
 
   diagonalInches: number;
   aspectRatio: string;
+
+  screenWeightPerM2?: number;
+  totalScreenWeight?: number;
 }

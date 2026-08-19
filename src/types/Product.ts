@@ -5,8 +5,6 @@ export interface ProductSpecification {
   specification_value: string;
 }
 
-// File: src/types/Product.ts
-
 export interface Product {
   id: string;
   model: string;
@@ -22,7 +20,8 @@ export interface Product {
   cabinetResolutionH: number;
   modulesPerCabinet: number;
   product_specifications?: any[];
-  seriesType?: string;  // "standard" | "aio"
-  led_type?: string;  // "COB" | "SMD" | "GOB"
-  aio_display_diagonal?: number;  // Diagonal in inches for AIO products
+  seriesType?: string;
+  led_type?: string;
+  aio_display_diagonal?: number;
+  screenWeightPerM2?: number;  // kg/m² - screen weight per square meter from product datasheet
 }

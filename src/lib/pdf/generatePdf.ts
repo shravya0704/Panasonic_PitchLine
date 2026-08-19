@@ -93,9 +93,10 @@ export const generatePdf = async (
   // Page 2: Proposal Summary
   doc.addPage();
   if (proposalData && proposalId) {
-    drawProposalSummaryPage(
+        drawProposalSummaryPage(
       doc,
       product,
+      result,
       proposalData,
       proposalId
     );

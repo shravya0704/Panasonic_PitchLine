@@ -59,13 +59,16 @@ export const calculateConfiguration = (
   const totalArea =
     actualWidth * actualHeight;
 
+  // FIX: Power consumption = maxPowerPerM2 (W/m²) × totalArea (m²) = total watts
+  // maxPowerPerM2 is from product datasheet (e.g., 66 W/m² for cabinet specs)
   const maximumPower =
-    totalCabinets *
-    product.maxPowerPerM2;
+    product.maxPowerPerM2 * totalArea;
 
+  // Average power is always 30% of maximum power per Panasonic specification
   const averagePower =
     maximumPower * 0.3;
 
+  // Heat dissipation equals power consumption (1W thermal = 1 BTU/hr equivalent)
   const maximumHeat =
     maximumPower;
 
@@ -109,6 +112,13 @@ export const calculateConfiguration = (
   const averageHeatBTU =
     averagePower * 3.412;
 
+  // FIX: Calculate total system weight from per-m² weight and total area
+  // screenWeightPerM2 is from product datasheet (e.g., 25 kg/m² for cabinet specs)
+  // For curved displays (PIS-C series), this will be NULL
+  const totalScreenWeight = product.screenWeightPerM2
+    ? product.screenWeightPerM2 * totalArea
+    : undefined;
+
   return {
     cabinetsW,
     cabinetsH,
@@ -125,18 +135,18 @@ export const calculateConfiguration = (
     totalArea,
 
     maximumPower,
-
     averagePower,
 
     maximumHeat,
-
     averageHeat,
 
     maximumHeatBTU,
-
     averageHeatBTU,
 
     diagonalInches,
     aspectRatio,
+
+    screenWeightPerM2: product.screenWeightPerM2,
+    totalScreenWeight,
   };
 };

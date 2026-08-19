@@ -4,7 +4,6 @@ import { Product } from "../../types/Product";
 interface ResultsPanelProps {
   result: ConfigurationResult | null;
   selectedProduct: Product | null;
-  // ADDED: Unit configuration matching master engine state
   unit: "mtr" | "ft";
 }
 
@@ -13,7 +12,12 @@ export const ResultsPanel = ({
   selectedProduct,
   unit,
 }: ResultsPanelProps) => {
-  if (!result || !selectedProduct) return null;
+    if (!result || !selectedProduct) return null;
+
+  // TEMP DEBUG: Check if screen weight is being loaded correctly
+  console.log("Product loaded:", selectedProduct);
+  console.log("screenWeightPerM2:", selectedProduct.screenWeightPerM2);
+  console.log("Type:", typeof selectedProduct.screenWeightPerM2);
 
   const METERS_TO_FEET = 3.28084;
   const SQ_METERS_TO_SQ_FEET = 10.7639;
@@ -29,10 +33,13 @@ export const ResultsPanel = ({
   const areaText = (unit === "mtr" ? baseArea : baseArea * SQ_METERS_TO_SQ_FEET).toFixed(2);
   const actualWidthText = (unit === "mtr" ? baseWidth : baseWidth * METERS_TO_FEET).toFixed(2);
   const actualHeightText = (unit === "mtr" ? baseHeight : baseHeight * METERS_TO_FEET).toFixed(2);
-const diagonalText = `${Math.round(result.diagonalInches)} in`;
-const aspectRatio = result.aspectRatio;
+  const diagonalText = `${Math.round(result.diagonalInches)} in`;
+  const aspectRatio = result.aspectRatio;
   const maxHeatBTU = result.maximumHeatBTU ?? (result.maximumPower * 3.412142);
   const avgHeatBTU = result.averageHeatBTU ?? (result.averagePower * 3.412142);
+
+  // Check if weight should be displayed (not curved display)
+  const shouldShowWeight = result.totalScreenWeight !== undefined;
 
   return (
     <div className="results-panel">
@@ -168,6 +175,15 @@ const aspectRatio = result.aspectRatio;
               <span className="metric-label">Total Modules</span>
               <span className="metric-value">{result.totalModules}</span>
             </div>
+
+            {shouldShowWeight && (
+              <div className="premium-metric-card">
+                <span className="metric-label">Total System Weight</span>
+                <span className="metric-value">
+                  {Math.round(result.totalScreenWeight!)} kg
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

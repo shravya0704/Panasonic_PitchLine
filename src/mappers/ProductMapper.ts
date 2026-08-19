@@ -33,6 +33,12 @@ export const ProductMapper = {
 
       avgPowerPerM2:
         row.avg_power_per_m2,
+
+      // NEW: Convert screenWeightPerM2 from string to number
+      // Supabase returns this as string, but calculation needs numeric type
+      screenWeightPerM2: row.screenWeightPerM2
+        ? Number(row.screenWeightPerM2)
+        : undefined,
     };
   },
 
