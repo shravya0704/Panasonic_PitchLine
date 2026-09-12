@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 import { getBrochureForSeries } from "../../services/brochureService";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
-import { applyGlobalPageTemplate } from "./addPdfFooter"; 
+import { applyGlobalPageTemplate } from "./addPdfFooter";
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
 import { addBrochurePages } from "./addBrochurePages";
 import { drawScreenSpecsPage } from "./drawScreenSpecsPage";
@@ -19,11 +19,6 @@ import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
 
 import { panasonicLogoBase64 } from "../../assets/logoBase64";
 
-/**
- * AIO DETECTION: Uses product.seriesType === "aio" (now populated from series.type column)
- * AIO products get simplified PDF: EDM + Brochure only
- * Standard products get full: EDM + Proposal + Engineering pages + Brochure
- */
 export const generatePdf = async (
   product: Product,
   result: ConfigurationResult,
@@ -38,65 +33,75 @@ export const generatePdf = async (
     email: string;
   },
   proposalId?: string,
-  unit: "mtr" | "ft" = "mtr" 
+  unit: "mtr" | "ft" = "mtr"
 ): Promise<void> => {
   const doc = new jsPDF();
+  
 
+  console.log("=== PDF Generation Started ===");
   console.log("Proposal Data:", proposalData);
   console.log("Proposal ID:", proposalId);
   console.log("Selected Product:", product);
   console.log("Series Code:", product.seriesCode);
   console.log("Series Type:", product.seriesType);
 
-  const brochure = await getBrochureForSeries(product.seriesCode);
+  // ========== BROCHURE FETCH WITH ERROR HANDLING ==========
+  let brochure;
+  try {
+    brochure = await getBrochureForSeries(product.seriesCode);
+    console.log(
+      `[generatePdf] Brochure for ${product.seriesCode}: cover=${!!brochure.coverImage}, pages=${brochure.brochurePages.length}`
+    );
+  } catch (brochureError) {
+    console.error(`[generatePdf] Failed to fetch brochure for ${product.seriesCode}:`, brochureError);
+    throw new Error(
+      `Cannot fetch brochure for series ${product.seriesCode}. ` +
+      `Error: ${brochureError instanceof Error ? brochureError.message : String(brochureError)}`
+    );
+  }
+
+  if (!brochure || !brochure.coverImage) {
+    throw new Error(
+      `[generatePdf] Invalid brochure for series ${product.seriesCode}. Missing coverImage.`
+    );
+  }
 
   // ========== AIO DETECTION ==========
   const isAIO = product.seriesType === "aio";
 
   // ========== AIO BRANCH ==========
   if (isAIO) {
-    // AIO: Simplified PDF structure (EDM + Brochure only)
-    // Page 1: EDM Cover
+    console.log("[generatePdf] AIO Series - using simplified PDF structure");
+
     drawMarketingCoverPage(doc, brochure.coverImage);
+    await addBrochurePages(doc, brochure);
 
-    // Pages 2+: Brochure pages (contains all marketing + specs)
-    addBrochurePages(doc, brochure);
-
-    // Optionally apply footer to EDM only (minimal branding)
     if (proposalId) {
       const totalPages = doc.getNumberOfPages();
-      console.log("AIO PDF TOTAL PAGES:", totalPages);
-      
-      // Only stamp page 1 (EDM) with footer
       doc.setPage(1);
-      applyGlobalPageTemplate(
-        doc,
-        proposalId,
-        1,
-        totalPages,
-        panasonicLogoBase64
-      );
+      applyGlobalPageTemplate(doc, proposalId, 1, totalPages, panasonicLogoBase64);
     }
 
-    // Save with AIO-specific filename
     const targetProject = proposalData?.projectName || "AIO-Display";
     const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
     const finalFilename = `PitchLine_${product.seriesCode}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
     doc.save(finalFilename);
-    return; // Exit early for AIO
+    console.log("[generatePdf] AIO PDF exported:", finalFilename);
+    return;
   }
 
-  // ========== STANDARD BRANCH (Non-AIO) ==========
+  // ========== STANDARD BRANCH ==========
+  console.log("[generatePdf] Standard series - using full PDF structure");
+
   // Page 1: EDM Cover Page
   drawMarketingCoverPage(doc, brochure.coverImage);
 
   // Page 2: Proposal Summary
   doc.addPage();
   if (proposalData && proposalId) {
-        drawProposalSummaryPage(
+    drawProposalSummaryPage(
       doc,
       product,
-      result,
       proposalData,
       proposalId
     );
@@ -116,10 +121,7 @@ export const generatePdf = async (
 
   // Page 4: Viewing Distance Analysis
   doc.addPage();
-  await drawViewingDistancePage(
-    doc,
-    viewingDistanceImage
-  );
+  await drawViewingDistancePage(doc, viewingDistanceImage);
 
   // Page 5: Product Specifications
   doc.addPage();
@@ -127,7 +129,6 @@ export const generatePdf = async (
 
   // Page 6: Power Diagram Page
   doc.addPage();
-
   if (product.applicationType === "Indoor (Curve Display)") {
     drawCurvePowerInfoPage(doc);
   } else {
@@ -136,56 +137,46 @@ export const generatePdf = async (
         ? POWER_RULES.outdoor.maxCabinetsPerChain
         : POWER_RULES.indoor.maxCabinetsPerChain;
 
-    const powerFlow = calculatePowerFlow(
-      result.cabinetsH,
-      maxCabinetsPerChain
-    );
-
+    const powerFlow = calculatePowerFlow(result.cabinetsH, maxCabinetsPerChain);
     const assignmentGrid = assignPowerChains(
       result.cabinetsW,
       result.cabinetsH,
       powerFlow.distribution
     );
-
     drawPowerDiagramPage(doc, result, assignmentGrid);
   }
 
   // Page 7: Data Diagram Page
   doc.addPage();
-
   if (product.applicationType === "Indoor (Curve Display)") {
     drawCurveDataInfoPage(doc);
   } else {
     drawDataDiagramPage(doc, product, result);
   }
 
-  // Append Brochure pages at the very end
-  addBrochurePages(doc, brochure);
+  // ========== APPEND BROCHURE PAGES ==========
+  await addBrochurePages(doc, brochure);
 
-  // Stamp Document Footers across engineering pages only (pages 2-7)
+  // ========== APPLY FOOTERS TO ENGINEERING PAGES (2-7) ==========
+  // Now we know the final total page count
   if (proposalId) {
     const totalPages = doc.getNumberOfPages();
     console.log("STANDARD PDF TOTAL PAGES:", totalPages);
-
-    // Pages 2-7: Engineering pages get footer
-    // Pages 8+: Brochure pages (no footer)
+    
+    // Pages 2-7 are engineering pages (get footer)
+    // Pages 8+ are brochure pages (no footer)
     for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
-      applyGlobalPageTemplate(
-        doc,
-        proposalId,
-        i,
-        totalPages,
-        panasonicLogoBase64
-      );
+      applyGlobalPageTemplate(doc, proposalId, i, totalPages, panasonicLogoBase64);
     }
   }
 
-  // Construct final filename
+  // ========== SAVE DOCUMENT ==========
   const targetProject = proposalData?.projectName || "Project";
   const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
   const finalFilename = `PitchLine_${product.seriesCode || "LED"}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
 
-  // Save Document Binary
   doc.save(finalFilename);
+  console.log("[generatePdf] Standard PDF exported:", finalFilename);
+  console.log("=== PDF Generation Completed ===");
 };

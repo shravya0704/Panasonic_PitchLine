@@ -16,9 +16,15 @@ import ViewingDistanceVisualizer from "../components/configurator/ViewingDistanc
 
 import { Product } from "../types/Product";
 import { ConfigurationResult } from "../types/ConfigurationResult";
+import { ProposalInfo } from "../types/ProposalInfo";
 import { BrochurePageService } from "../services/BrochurePageService";
-import { ProposalService } from "../services/ProposalService";
+import ProposalService from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
+
+import { 
+  canvasToOptimizedJPEG, 
+  QUALITY_PRESETS 
+} from "../lib/helpers/imageOptimization";
 
 const panasonicLogo = new URL("../assets/Panasonic-logo.jpg", import.meta.url).href;
 
@@ -36,11 +42,12 @@ function ConfiguratorPage() {
     const [targetResolution, setTargetResolution] = useState<"None" | "HD" | "FHD" | "UHD">("None");
 
     const [showExportModal, setShowExportModal] = useState(false);
-    const [proposalInfo, setProposalInfo] = useState({
+    const [proposalInfo, setProposalInfo] = useState<ProposalInfo>({
         projectName: "",
         customerName: "",
         companyName: "",
-        email: "",
+        customerEmail: "",
+        salesContactEmail: "",
     });
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -124,22 +131,36 @@ function ConfiguratorPage() {
     };
 
     const handleExportPdf = async (proposalData?: any) => {
-        if (!selectedProduct || !result) return;
+        if (!selectedProduct) {
+            throw new Error("Please select a product before exporting PDF");
+        }
+
+        if (!result) {
+            throw new Error("Please calculate the configuration before exporting PDF");
+        }
+
         try {
             let imageData: string | undefined;
             let viewingDistanceImage: string | undefined;
 
             if (screenPreviewRef.current) {
-                const canvas = await html2canvas(screenPreviewRef.current, { scale: 2 });
-                imageData = canvas.toDataURL("image/png");
+                // ⚠️ OPTIMIZATION: Changed scale 2→1.5 (43.75% fewer pixels) + PNG→JPEG
+                const canvas = await html2canvas(screenPreviewRef.current, {
+                    scale: 1.5,  // Reduced from 2
+                    backgroundColor: "#ffffff"
+                });
+                // JPEG at 0.85 quality is ~60-70% smaller than PNG
+                imageData = canvasToOptimizedJPEG(canvas, QUALITY_PRESETS.SCREEN_CAPTURE);
             }
 
             // Capture Viewing Distance only for standard products (not AIO)
             if (viewingDistanceRef.current && !isAIO) {
+                // ⚠️ OPTIMIZATION: Changed scale 2→1.5 + PNG→JPEG
                 const canvas = await html2canvas(viewingDistanceRef.current, {
-                    scale: 2,
+                    scale: 1.5,  // Reduced from 2
+                    backgroundColor: "#ffffff"
                 });
-                viewingDistanceImage = canvas.toDataURL("image/png");
+                viewingDistanceImage = canvasToOptimizedJPEG(canvas, QUALITY_PRESETS.VIEWING_DISTANCE);
             }
 
             const proposalId = generateProposalId();
@@ -155,12 +176,7 @@ function ConfiguratorPage() {
                 height: number,
                 screenPreviewImage?: string,
                 viewingDistanceImage?: string,
-                proposalData?: {
-                    projectName: string;
-                    customerName: string;
-                    companyName: string;
-                    email: string;
-                },
+                proposalData?: ProposalInfo,
                 proposalId?: string,
                 unit?: "mtr" | "ft"
             ) => Promise<void>;
@@ -290,7 +306,7 @@ function ConfiguratorPage() {
             {showExportModal && (
                 <ExportProposalModal
                     onClose={() => setShowExportModal(false)}
-                    onSubmit={(data) => {
+                    onSubmit={(data: ProposalInfo) => {
                         setProposalInfo(data);
                         setShowExportModal(false);
                         handleExportPdf(data);

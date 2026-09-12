@@ -1,16 +1,19 @@
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
-import { ConfigurationResult } from "../../types/ConfigurationResult";
 
 // Helper: Capitalizes the first letter of each word (Title Case)
 const formatTitleCase = (text: string) => {
-  return text;
+  if (!text) return "";
+  return text
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 };
 
+// SIGNATURE UNCHANGED: (doc, product, proposalData, proposalId)
 export const drawProposalSummaryPage = (
   doc: jsPDF,
   product: Product,
-  result: ConfigurationResult,
   proposalData: {
     projectName: string;
     customerName: string;
@@ -22,15 +25,11 @@ export const drawProposalSummaryPage = (
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // ==========================================
   // 1. GLOBAL PAGE BACKGROUND
-  // ==========================================
   doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // ==========================================
   // 2. PAGE TITLES
-  // ==========================================
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(0, 85, 165);
@@ -40,9 +39,7 @@ export const drawProposalSummaryPage = (
   doc.setTextColor(30, 30, 30);
   doc.text("ENGINEERING PROPOSAL", 15, 45);
 
-  // ==========================================
   // 3. CARD 1: PROPOSAL INFORMATION
-  // ==========================================
   const card1Y = 55;
   const card1Height = 85;
 
@@ -57,6 +54,7 @@ export const drawProposalSummaryPage = (
   doc.setDrawColor(235, 235, 235);
   doc.line(25, card1Y + 18, 185, card1Y + 18);
 
+  // FIX: wrap long values (especially email) so they don't overflow the card
   const infoData = [
     { label: "Proposal ID:", value: proposalId },
     { label: "Project Name:", value: formatTitleCase(proposalData.projectName) },
@@ -65,6 +63,9 @@ export const drawProposalSummaryPage = (
     { label: "Email:", value: proposalData.email?.toLowerCase() },
     { label: "Generated On:", value: new Date().toLocaleDateString() }
   ];
+
+  // Max width available for values (from x=65 to card right edge at 195, minus 10 margin)
+  const maxValueWidth = 120;
 
   let currentY = card1Y + 30;
   infoData.forEach((item) => {
@@ -75,14 +76,15 @@ export const drawProposalSummaryPage = (
 
     doc.setFont("helvetica", "bold");
     doc.setTextColor(50, 50, 50);
-    doc.text(item.value || "N/A", 65, currentY);
+    // Split long values to prevent overflow
+    const wrappedValue = doc.splitTextToSize(item.value || "N/A", maxValueWidth);
+    doc.text(wrappedValue, 65, currentY);
 
-    currentY += 10;
+    // Advance Y: each extra wrapped line adds ~5 units
+    currentY += wrappedValue.length > 1 ? wrappedValue.length * 5 : 10;
   });
 
-  // ==========================================
   // 4. CARD 2: SELECTED DISPLAY
-  // ==========================================
   const card2Y = card1Y + card1Height + 10;
   const card2Height = 55;
 
@@ -116,53 +118,8 @@ export const drawProposalSummaryPage = (
     doc.setFontSize(11);
     doc.setTextColor(50, 50, 50);
 
+    // Constrain long values within column width
     const wrappedValue = doc.splitTextToSize(item.value, colWidth - 3);
     doc.text(wrappedValue, xPos, card2Y + 40);
   });
-
-  // ==========================================
-  // 5. CARD 3: POWER & WEIGHT SPECIFICATIONS
-  // Only show weight card if totalScreenWeight is defined (not curved display)
-  // ==========================================
-  const shouldShowWeightCard = result.totalScreenWeight !== undefined;
-  const card3Y = card2Y + card2Height + 10;
-  const card3Height = shouldShowWeightCard ? 45 : 0;
-
-  if (shouldShowWeightCard) {
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(220, 225, 230);
-    doc.roundedRect(15, card3Y, 180, card3Height, 2, 2, "FD");
-
-    doc.setFontSize(11);
-    doc.setTextColor(0, 85, 165);
-    doc.text("POWER & WEIGHT SPECIFICATIONS", 25, card3Y + 12);
-
-    doc.setDrawColor(235, 235, 235);
-    doc.line(25, card3Y + 18, 185, card3Y + 18);
-
-    const powerWeightData = [
-      { label: "Maximum Power", value: `${Math.round(result.maximumPower)} W` },
-      { label: "Average Power", value: `${Math.round(result.averagePower)} W` },
-      { label: "Total System Weight", value: `${Math.round(result.totalScreenWeight!)} kg` },
-      { label: "Display Area", value: `${result.totalArea.toFixed(2)} m²` }
-    ];
-
-    const gridColWidth = 85;
-    powerWeightData.forEach((item, index) => {
-      const row = Math.floor(index / 2);
-      const col = index % 2;
-      const xPos = 25 + (col * gridColWidth);
-      const yPos = card3Y + 28 + (row * 12);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(120, 120, 120);
-      doc.text(item.label, xPos, yPos);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.setTextColor(50, 50, 50);
-      doc.text(item.value, xPos, yPos + 6);
-    });
-  }
 };

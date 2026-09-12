@@ -21,13 +21,6 @@ function getColorForChain(chain: string) {
  * representation of how LED cabinets should be grouped into LAN/Data
  * chains based on Panasonic's supported pixel limitations.
  *
- * High level flow:
- * 1. Calculate how many cabinets a single LAN cable can support.
- * 2. Assign every cabinet to a data chain (A, B, C...).
- * 3. Draw the cabinet grid.
- * 4. Draw coloured data cable paths for every chain.
- * 5. Display engineering rules used to generate the assignment.
- *
  * NOTE:
  * This file is responsible ONLY for rendering the PDF.
  * All engineering calculations are delegated to calculation helpers
@@ -44,15 +37,12 @@ export const drawDataDiagramPage = (
   // ==========================================
   // 1. GLOBAL PAGE BACKGROUND
   // ==========================================
-  // Paint the entire page with a light Panasonic-themed background
-  // before drawing any content.
   doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
   // ==========================================
-  // 2. PAGE TITLES
+  // 2. PAGE TITLES (matching Power Flow Diagram structure)
   // ==========================================
-  // Standard PDF page header used throughout the configurator.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(0, 85, 165);

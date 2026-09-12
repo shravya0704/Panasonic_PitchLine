@@ -1,15 +1,10 @@
+// FILE: src/types/ProposalInfo.ts
 export interface ProposalInfo {
-  proposalId: string;
-
   projectName: string;
-
   customerName: string;
-
   companyName: string;
-
-  email: string;
-
+  customerEmail: string;
+  salesContactEmail: string;  // ← NOW MANDATORY
   phoneNumber?: string;
-
   location?: string;
 }

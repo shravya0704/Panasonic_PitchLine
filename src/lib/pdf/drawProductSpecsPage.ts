@@ -7,28 +7,20 @@ export const drawProductSpecsPage = async (
   product: Product
 ): Promise<void> => {
   const specs = await ProductSpecificationService.getByModel(product.model);
-console.log("PRODUCT OBJECT:", product);
+  console.log("PRODUCT OBJECT:", product);
   console.log("PRODUCT SPECS JSON:", JSON.stringify(specs, null, 2));
-
-  if (!specs || Object.keys(specs).length === 0) {
-    return;
-  }
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // ==========================================
   // 1. GLOBAL PAGE BACKGROUND
-  // ==========================================
-  doc.setFillColor(244, 247, 250); // Pastel slate-blue theme
+  doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // ==========================================
   // 2. PAGE TITLES & MODEL SUBTITLE
-  // ==========================================
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(0, 85, 165); // Panasonic Blue
+  doc.setTextColor(0, 85, 165);
   doc.text("DISPLAY SOLUTIONS", 15, 35);
 
   doc.setFontSize(22);
@@ -42,17 +34,21 @@ console.log("PRODUCT OBJECT:", product);
   doc.setDrawColor(210);
   doc.line(15, 60, pageWidth - 15, 60);
 
-  // ==========================================
+  // EARLY EXIT: specs missing — show message instead of blank page
+  if (!specs || Object.keys(specs).length === 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(110, 110, 110);
+    doc.text("Specifications data is not available for this model.", 15, 80);
+    doc.text("Please contact Panasonic for detailed technical specifications.", 15, 90);
+    return;
+  }
+
   // 3. CARD UI HELPER
-  // ==========================================
-  // ==========================================
-  // 3. CARD UI HELPER
-  // ==========================================
   const LEFT_X = 15;
   const RIGHT_X = 107.5;
   const COL_WIDTH = 87.5;
   
-  // 1. SPACING FIX: Start the cards slightly higher up the page (closer to the line)
   let leftY = 64; 
   let rightY = 64;
 
@@ -64,7 +60,6 @@ console.log("PRODUCT OBJECT:", product);
     const startX = column === "left" ? LEFT_X : RIGHT_X;
     let startY = column === "left" ? leftY : rightY;
     
-    // Slightly wider text area to prevent aggressive wrapping
     const maxValueWidth = 36; 
 
     doc.setFont("helvetica", "bold");
@@ -74,43 +69,32 @@ console.log("PRODUCT OBJECT:", product);
     const processedRows = rows.map(([label, value]) => {
       const valStr = String(value ?? "-");
       const splitVal = doc.splitTextToSize(valStr, maxValueWidth);
-      
-      // 2. SPACING FIX: Tighter row heights. 
-      // Single line = 6mm (was 7.5mm), Double line = 10mm (was 11.5mm)
       const rowHeight = (splitVal.length * 4) + 2; 
       totalRowsHeight += rowHeight;
-      
       return { label, splitVal, rowHeight };
     });
 
-    // 3. SPACING FIX: Reduced top/bottom padding inside the white cards
     const cardHeight = 16 + totalRowsHeight;
 
-    // Draw White Card Background
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(220, 225, 230);
     doc.roundedRect(startX, startY, COL_WIDTH, cardHeight, 2, 2, "FD");
 
-    // Card Header
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0, 85, 165);
-    doc.text(title.toUpperCase(), startX + 7, startY + 8); // Shifted text up
+    doc.text(title.toUpperCase(), startX + 7, startY + 8);
 
-    // Header Divider
     doc.setDrawColor(240, 240, 240);
-    doc.line(startX + 7, startY + 11, startX + COL_WIDTH - 7, startY + 11); // Shifted line up
+    doc.line(startX + 7, startY + 11, startX + COL_WIDTH - 7, startY + 11);
 
-    // Draw Rows
-    let currentY = startY + 17; // Shifted list start up
+    let currentY = startY + 17;
     processedRows.forEach(({ label, splitVal, rowHeight }) => {
-      // Label
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
       doc.setTextColor(110, 110, 110);
       doc.text(label, startX + 7, currentY);
 
-      // Value
       doc.setFont("helvetica", "bold");
       doc.setTextColor(40, 40, 40);
       doc.text(splitVal, startX + 47, currentY); 
@@ -118,16 +102,14 @@ console.log("PRODUCT OBJECT:", product);
       currentY += rowHeight;
     });
 
-    // 4. SPACING FIX: Reduced gap between stacked cards from 8 to 6
     if (column === "left") {
       leftY += cardHeight + 6;
     } else {
       rightY += cardHeight + 6;
     }
   };
-  // ==========================================
-  // 4. DATA EXTRACTION LOGIC
-  // ==========================================
+
+  // 4. DATA EXTRACTION
   const getSpec = (...keys: string[]) => {
     for (const key of keys) {
       if (specs[key]) return specs[key];
@@ -152,10 +134,8 @@ console.log("PRODUCT OBJECT:", product);
       ? "Indoor Environment"
       : "Outdoor Environment";
 
-  // ==========================================
   // 5. RENDER CARDS
-  // ==========================================
-  
+
   // --- LEFT COLUMN ---
   drawSection(
     "PHYSICAL PARAMETERS",
@@ -166,14 +146,8 @@ console.log("PRODUCT OBJECT:", product);
       ["Module Dimensions", getSpec("Module Dimensions")],
       ["Module Weight", getSpec("Module Weight")],
       ["Modules Per Cabinet", product.modulesPerCabinet.toString()],
-      [
-  "Cabinet Resolution",
-  `${product.cabinetResolutionW} × ${product.cabinetResolutionH}`
-],
-      [
-  "Cabinet Dimensions",
-  `${product.cabinetWidth} × ${product.cabinetHeight} mm`
-],
+      ["Cabinet Resolution", `${product.cabinetResolutionW} × ${product.cabinetResolutionH}`],
+      ["Cabinet Dimensions", `${product.cabinetWidth} × ${product.cabinetHeight} mm`],
       ["Cabinet Surface Area", `${cabinetArea} m²`],
       ["Cabinet Weight", specs["Cabinet Weight"]],
       ["Weight Per m²", weightPerM2],
@@ -190,30 +164,12 @@ console.log("PRODUCT OBJECT:", product);
     [
       ["Brightness", `${product.brightness} nits`],
       ["Pixel Density", getSpec("Pixel Density")],
-      [
-        "Color Temperature",
-        getSpec(
-          "Color Temperature",
-          "Color Temperature (K)"
-        )
-      ],
-      [
-        "Viewing Angle",
-        getSpec(
-          "Viewing Angle",
-          "Visual Viewing Angle (H x V)"
-        )
-      ],
+      ["Color Temperature", getSpec("Color Temperature", "Color Temperature (K)")],
+      ["Viewing Angle", getSpec("Viewing Angle", "Visual Viewing Angle (H x V)")],
       ["Brightness Uniformity", specs["Brightness Uniformity"] ?? (product.applicationType === "Outdoor" ? "98%" : "-")],
       ["Color Uniformity", specs["Color Uniformity"] ?? "±0.003"],
       ["Contrast Ratio", specs["Contrast Ratio"]],
-      [
-        "Processing Depth",
-        getSpec(
-          "Processing Depth",
-          "Processing Depth (bit)"
-        )
-      ],
+      ["Processing Depth", getSpec("Processing Depth", "Processing Depth (bit)")],
     ],
     "left"
   );
@@ -224,65 +180,28 @@ console.log("PRODUCT OBJECT:", product);
     [
       ["Power Consumption Max", getSpec("Power Consumption Max", "Power Consumption (Max)")],
       ["Power Consumption Average", getSpec("Power Consumption Average", "Power Consumption (Average)")],
-      [
-        "Power Supply",
-        getSpec(
-          "Power Supply",
-          "Power Supply (V)"
-        )
-      ],
-      [
-        "Frame Rate",
-        getSpec(
-          "Frame Rate",
-          "Frame Rate (Hz)"
-        )
-      ],
-      [
-        "Refresh Rate",
-        getSpec(
-          "Refresh Rate",
-          "Refresh Rate (Hz)"
-        )
-      ],
+      ["Power Supply", getSpec("Power Supply", "Power Supply (V)")],
+      ["Frame Rate", getSpec("Frame Rate", "Frame Rate (Hz)")],
+      ["Refresh Rate", getSpec("Refresh Rate", "Refresh Rate (Hz)")],
     ],
     "right"
   );
 
   drawSection(
-  "OPERATION",
-  [
+    "OPERATION",
     [
-      "LED Lifetime",
-      getSpec(
-        "LED Lifetime",
-        "LED Lifetime (Half Brightness)"
-      )
+      ["LED Lifetime", getSpec("LED Lifetime", "LED Lifetime (Half Brightness)")],
+      ["Application", application],
     ],
-    ["Application", application],
-  ],
-  "right"
-);
-console.log(
-  "LED:",
-  JSON.stringify(
-    getSpec(
-      "LED Lifetime",
-      "LED Lifetime (Half Brightness)"
-    )
-  )
-);
+    "right"
+  );
+
+  console.log("LED:", JSON.stringify(getSpec("LED Lifetime", "LED Lifetime (Half Brightness)")));
 
   drawSection(
     "ENVIRONMENT",
     [
-      [
-        "Operating Temp.",
-        getSpec(
-          "Operating Temperature",
-          "Operating Temperature (°C)"
-        )
-      ],
+      ["Operating Temp.", getSpec("Operating Temperature", "Operating Temperature (°C)")],
       ["Operating Humidity", specs["Operating Humidity"]],
       ["IP Rating", specs["IP Rating"]],
     ],

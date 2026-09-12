@@ -30,6 +30,9 @@ function getPowerTheme() {
  * NOTE:
  * This file performs no power-routing calculations.
  * It only renders the assignmentGrid supplied by upstream business logic.
+ * 
+ * ✅ CHANGE: Removed thick borders around diagram to match Data Flow page
+ * Only header divider line remains (consistent with all pages)
  */
 export const drawPowerDiagramPage = (
   doc: jsPDF,
@@ -53,6 +56,7 @@ export const drawPowerDiagramPage = (
   doc.setTextColor(30, 30, 30);
   doc.text("POWER FLOW DIAGRAM", 15, 45);
 
+  // ✅ CHANGE: Keep only the header divider line (consistent with all pages)
   doc.setDrawColor(210);
   doc.line(15, 55, pageWidth - 15, 55);
 
@@ -71,21 +75,11 @@ export const drawPowerDiagramPage = (
   const startX = (pageWidth - gridWidth) / 2;
   const startY = 70;
 
-  // 4. White card container behind the engineering drawing.
-  const padding = 10;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(220, 225, 230);
-  doc.roundedRect(
-    startX - padding,
-    startY - padding,
-    gridWidth + padding * 2,
-    gridHeight + padding * 2,
-    2,
-    2,
-    "FD"
-  );
+  // ✅ CHANGE: REMOVED the white card container with borders
+  // The diagram now renders without a surrounding box
+  // This matches the Data Flow Diagram page styling
 
-  // 5. Draw cabinets.
+  // 4. Draw cabinets.
   // Every cabinet uses the same light grey fill.
   // Chain letters distinguish different power chains.
   const theme = getPowerTheme();
@@ -108,7 +102,7 @@ export const drawPowerDiagramPage = (
     }
   }
 
-  // 6. Build a lookup of cabinets belonging to each power chain.
+  // 5. Build a lookup of cabinets belonging to each power chain.
   const chainMap = new Map<string, { row: number; col: number }[]>();
 
   for (let row = 0; row < rows; row++) {
@@ -145,8 +139,8 @@ export const drawPowerDiagramPage = (
   // Reset drawing state so later PDF pages are unaffected.
   doc.setLineWidth(0.2);
 
-  // 7. Engineering notes.
-  const rulesY = startY + gridHeight + padding + 15;
+  // 6. Engineering notes.
+  const rulesY = startY + gridHeight + 15;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
