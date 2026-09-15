@@ -35,7 +35,10 @@ export const generatePdf = async (
   proposalId?: string,
   unit: "mtr" | "ft" = "mtr"
 ): Promise<void> => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    compress: true,
+    precision: 2,
+  });
   
 
   console.log("=== PDF Generation Started ===");

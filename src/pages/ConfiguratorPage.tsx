@@ -18,7 +18,7 @@ import { Product } from "../types/Product";
 import { ConfigurationResult } from "../types/ConfigurationResult";
 import { ProposalInfo } from "../types/ProposalInfo";
 import { BrochurePageService } from "../services/BrochurePageService";
-import ProposalService from "../services/ProposalService";
+import { ProposalService } from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
 
 import { 
