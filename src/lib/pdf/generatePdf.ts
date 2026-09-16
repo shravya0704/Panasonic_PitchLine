@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 import { getBrochureForSeries } from "../../services/brochureService";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
-import { applyGlobalPageTemplate } from "./addPdfFooter";
+import { applyGlobalPageTemplate } from "./addPdfFooter"; 
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
 import { addBrochurePages } from "./addBrochurePages";
 import { drawScreenSpecsPage } from "./drawScreenSpecsPage";
@@ -33,13 +33,13 @@ export const generatePdf = async (
     email: string;
   },
   proposalId?: string,
-  unit: "mtr" | "ft" = "mtr"
+  unit: "mtr" | "ft" = "mtr" 
 ): Promise<void> => {
+  // COMPRESSION FIX: Enable jsPDF compression to reduce file size
   const doc = new jsPDF({
     compress: true,
     precision: 2,
   });
-  
 
   console.log("=== PDF Generation Started ===");
   console.log("Proposal Data:", proposalData);
@@ -77,6 +77,7 @@ export const generatePdf = async (
     console.log("[generatePdf] AIO Series - using simplified PDF structure");
 
     drawMarketingCoverPage(doc, brochure.coverImage);
+    // IMPORTANT: addBrochurePages is now async
     await addBrochurePages(doc, brochure);
 
     if (proposalId) {
@@ -157,29 +158,30 @@ export const generatePdf = async (
     drawDataDiagramPage(doc, product, result);
   }
 
-  // ========== APPEND BROCHURE PAGES ==========
-  await addBrochurePages(doc, brochure);
+  // Append Brochure pages at the very end
+  // IMPORTANT: addBrochurePages is now async - must await it
+  // This ensures all brochure images are loaded and rendered before saving
+  await addBrochurePages(doc, brochure).catch((brochureError) => {
+    console.error("[generatePdf] Error adding brochure pages:", brochureError);
+    // Continue with PDF export even if brochure fails - engineering pages are complete
+  });
 
-  // ========== APPLY FOOTERS TO ENGINEERING PAGES (2-7) ==========
-  // Now we know the final total page count
+  // Stamp footers on engineering pages 2-7 only (brochure pages won't get footers)
   if (proposalId) {
     const totalPages = doc.getNumberOfPages();
-    console.log("STANDARD PDF TOTAL PAGES:", totalPages);
-    
-    // Pages 2-7 are engineering pages (get footer)
-    // Pages 8+ are brochure pages (no footer)
+    console.log("PDF TOTAL PAGES:", totalPages);
     for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
       applyGlobalPageTemplate(doc, proposalId, i, totalPages, panasonicLogoBase64);
     }
   }
 
-  // ========== SAVE DOCUMENT ==========
+  // Construct final filename
   const targetProject = proposalData?.projectName || "Project";
   const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
   const finalFilename = `PitchLine_${product.seriesCode || "LED"}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
 
   doc.save(finalFilename);
-  console.log("[generatePdf] Standard PDF exported:", finalFilename);
+  console.log("[generatePdf] PDF exported successfully:", finalFilename);
   console.log("=== PDF Generation Completed ===");
 };

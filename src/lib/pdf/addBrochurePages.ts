@@ -7,25 +7,30 @@ interface BrochureData {
 
 /**
  * addBrochurePages
+ * 
  * Appends brochure page images to the PDF
  * 
- * ENHANCED: Validates input and handles empty/missing brochure pages gracefully
- * Skips invalid pages with warnings instead of crashing
+ * CRITICAL FIX: Loads images from Supabase URLs as base64 before adding them
+ * to the PDF. This prevents blank pages caused by jsPDF's inability to load
+ * remote URLs asynchronously.
  * 
- * @param doc - jsPDF document instance
- * @param brochure - Brochure data with coverImage and brochurePages array
- * @throws Error if brochure object is null/undefined or coverImage is invalid
+ * Why this is needed:
+ * - jsPDF's doc.addImage() is synchronous
+ * - Remote URLs require async fetch()
+ * - Direct URL passing → CORS errors → blank pages
+ * 
+ * Solution:
+ * - Fetch each URL as blob
+ * - Convert blob to base64
+ * - Pass base64 to addImage() → works reliably
  */
-export const addBrochurePages = (
+export const addBrochurePages = async (
   doc: jsPDF,
-  brochure: BrochureData | null | undefined
-): void => {
+  brochure: BrochureData
+): Promise<void> => {
   // Validate brochure object
   if (!brochure) {
-    throw new Error(
-      "[addBrochurePages] Invalid brochure object: " +
-      `Received ${brochure}`
-    );
+    throw new Error("[addBrochurePages] Invalid brochure object");
   }
 
   // Validate brochurePages array
@@ -37,42 +42,83 @@ export const addBrochurePages = (
     return;
   }
 
-  // If no brochure pages, log and return early
+  // If no brochure pages, exit early
   if (brochure.brochurePages.length === 0) {
-    console.info(
-      "[addBrochurePages] No brochure pages to add. PDF will not include brochure section."
-    );
+    console.info("[addBrochurePages] No brochure pages to add.");
     return;
   }
 
-  // Process each brochure page
-  brochure.brochurePages.forEach((page, index) => {
+  console.log(`[addBrochurePages] Adding ${brochure.brochurePages.length} brochure pages...`);
+
+  // Process each brochure page sequentially
+  for (let i = 0; i < brochure.brochurePages.length; i++) {
+    const pageUrl = brochure.brochurePages[i];
+
     // Validate individual page URL
-    if (!page || typeof page !== "string" || page.trim() === "") {
+    if (!pageUrl || typeof pageUrl !== "string" || pageUrl.trim() === "") {
       console.warn(
-        `[addBrochurePages] Skipping invalid brochure page at index ${index}. ` +
-        `Expected non-empty string, received: ${JSON.stringify(page)}`
+        `[addBrochurePages] Skipping invalid page at index ${i}. ` +
+        `Expected non-empty string, received: ${JSON.stringify(pageUrl)}`
       );
-      return; // Skip this page, continue with others
+      continue;
     }
 
     try {
+      // CRITICAL: Fetch the image from Supabase and convert to base64
+      console.log(`[addBrochurePages] Loading page ${i + 1}/${brochure.brochurePages.length} from ${pageUrl.substring(0, 60)}...`);
+      
+      const response = await fetch(pageUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const base64 = await blobToBase64(blob);
+
+      // Add new page and insert the image
       doc.addPage();
       doc.addImage(
-        page,
+        base64,
         "JPEG",
         0,
         0,
         210,
         297
       );
+
+      console.log(`[addBrochurePages] Page ${i + 1} added successfully`);
     } catch (error) {
       console.error(
-        `[addBrochurePages] Failed to add brochure page ${index + 1}. ` +
-        `Error: ${error instanceof Error ? error.message : String(error)}. ` +
-        `URL: ${page.substring(0, 100)}...`
+        `[addBrochurePages] Failed to add page ${i + 1}. ` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`
       );
-      // Continue with next page instead of crashing
+      // Continue with next page instead of stopping
+      // This ensures partial brochures still render
     }
-  });
+  }
+
+  console.log(`[addBrochurePages] Finished adding brochure pages`);
 };
+
+/**
+ * Helper function to convert Blob to base64 string
+ * @param blob - The Blob object (image data)
+ * @returns Promise<string> - base64 encoded data URL
+ */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("FileReader result is not a string"));
+      }
+    };
+    reader.onerror = () => {
+      reject(new Error("FileReader error"));
+    };
+    reader.readAsDataURL(blob);
+  });
+}
