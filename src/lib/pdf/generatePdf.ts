@@ -77,8 +77,7 @@ export const generatePdf = async (
     console.log("[generatePdf] AIO Series - using simplified PDF structure");
 
     drawMarketingCoverPage(doc, brochure.coverImage);
-    // IMPORTANT: addBrochurePages is now async
-    await addBrochurePages(doc, brochure);
+    addBrochurePages(doc, brochure);
 
     if (proposalId) {
       const totalPages = doc.getNumberOfPages();
@@ -159,12 +158,7 @@ export const generatePdf = async (
   }
 
   // Append Brochure pages at the very end
-  // IMPORTANT: addBrochurePages is now async - must await it
-  // This ensures all brochure images are loaded and rendered before saving
-  await addBrochurePages(doc, brochure).catch((brochureError) => {
-    console.error("[generatePdf] Error adding brochure pages:", brochureError);
-    // Continue with PDF export even if brochure fails - engineering pages are complete
-  });
+  addBrochurePages(doc, brochure);
 
   // Stamp footers on engineering pages 2-7 only (brochure pages won't get footers)
   if (proposalId) {

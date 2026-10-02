@@ -160,7 +160,7 @@ export const BrochureUploadService = {
 
       const pagesToSave = pages.map((_, index) => ({
         pageNumber: index + 1,
-        imageUrl: imageUrls[index],
+        imageUrl: pages[index],
       }));
 
       // FIXED: Now passing seriesCode as required parameter

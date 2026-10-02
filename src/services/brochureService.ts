@@ -1,3 +1,4 @@
+import { SERIES_METADATA } from "../data/seriesMetadata";
 import { SeriesAdminRepository } from "../repositories/SeriesAdminRepository";
 import { BrochureUploadRepository } from "../repositories/BrochureUploadRepository";
 
@@ -22,6 +23,19 @@ const GLOBAL_EDM_IMAGE_URL =
 export const getBrochureForSeries = async (
   seriesCode: string
 ) => {
+  const local = SERIES_METADATA[seriesCode];
+  if (local) {
+    console.log(`[BrochureService] Using locally bundled assets for ${seriesCode}`);
+    return {
+      coverImage: local.coverImage,
+      brochurePages: local.brochurePages,
+    };
+  }
+
+  console.warn(
+    `[BrochureService] No local assets for ${seriesCode}, falling back to DB`
+  );
+
   let series = await SeriesAdminRepository.getSeriesByCode(seriesCode);
 
   // CASE 1: Series record doesn't exist in the database

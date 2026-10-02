@@ -114,6 +114,7 @@ src/
       generateDataPaths.ts
     helpers/
       getSeriesFromModel.ts
+      imageOptimization.ts
     pdf/
       addBrochurePages.ts
       addPdfFooter.ts
@@ -1258,6 +1259,70 @@ export const PRODUCT_SPECS: Record<
 };
 </file>
 
+<file path="src/lib/helpers/imageOptimization.ts">
+/**
+ * Image Optimization Utility
+ * Handles JPEG compression and quality settings for PDF generation
+ * Reduces file size by 60-70% without perceptible quality loss
+ */
+
+export interface ImageOptimizationConfig {
+  quality: number;
+  format: "jpeg" | "png";
+}
+
+const DEFAULT_CONFIG: ImageOptimizationConfig = {
+  quality: 0.85,
+  format: "jpeg",
+};
+
+/**
+ * Converts canvas to optimized JPEG string
+ * JPEG at 0.85 quality = professional grade (magazine photography standard)
+ * PNG provides no compression benefit for photographs
+ *
+ * @param canvas HTML5 Canvas element
+ * @param quality JPEG quality (0-1, default 0.85)
+ * @returns Base64 data URL
+ */
+export const canvasToOptimizedJPEG = (
+  canvas: HTMLCanvasElement,
+  quality: number = 0.85
+): string => {
+  try {
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch (error) {
+    console.error("Failed to convert canvas to JPEG, falling back to PNG", error);
+    return canvas.toDataURL("image/png");
+  }
+};
+
+/**
+ * Quality presets for different image types
+ * Tuned for professional appearance while maximizing compression
+ */
+export const QUALITY_PRESETS = {
+  SCREEN_CAPTURE: 0.85, // UI previews - imperceptible loss vs PNG
+  VIEWING_DISTANCE: 0.85, // Distance diagrams - high quality needed
+  BROCHURE_IMAGE: 0.82, // Marketing images - slightly lower acceptable
+  THUMBNAIL: 0.70, // Small displays - lower quality acceptable
+};
+
+/**
+ * Estimates file size reduction from JPEG compression
+ * Useful for logging/monitoring compression effectiveness
+ */
+export const estimateCompressionRatio = (
+  originalSize: number,
+  jpegQuality: number
+): number => {
+  // Rough estimation: lower quality ≈ 20-30% smaller per 0.1 reduction
+  const qualityFactor = (jpegQuality - 0.7) * 0.3; // Maps 0.7-1.0 to 0-0.09
+  const compressionRatio = 0.3 + qualityFactor; // Base 30% reduction + quality factor
+  return Math.round(originalSize * compressionRatio);
+};
+</file>
+
 <file path="src/lib/pdf/convertPdfToImages.ts">
 import * as pdfjsLib from "pdfjs-dist";
 
@@ -2224,446 +2289,6 @@ export default function ProductTable({
 }
 </file>
 
-<file path="src/components/admin/ProposalLeadsPage.tsx">
-import { useEffect, useState } from "react";
-import { ProposalRepository, ProposalRecord } from "../../repositories/ProposalRepository";
-import AdminCard from "./ui/AdminCard";
-import AdminTable from "./ui/AdminTable";
-
-const ITEMS_PER_PAGE = 10;
-
-export default function ProposalLeadsPage() {
-  const [proposals, setProposals] = useState<ProposalRecord[]>([]);
-  const [filteredProposals, setFilteredProposals] = useState<ProposalRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    loadProposals();
-  }, []);
-
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const filtered = proposals.filter(
-        (p) =>
-          p.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.product_model.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredProposals(filtered);
-      setCurrentPage(1);
-    } else {
-      setFilteredProposals(proposals);
-      setCurrentPage(1);
-    }
-  }, [searchTerm, proposals]);
-
-  const loadProposals = async () => {
-    try {
-      setIsLoading(true);
-      const data = await ProposalRepository.getAll();
-      setProposals(data);
-    } catch (err) {
-      console.error("Failed to load proposals:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async (proposalId: string) => {
-    setIsDeleting(true);
-    try {
-      await ProposalRepository.delete(proposalId);
-      setProposals((prev) => prev.filter((p) => p.id !== proposalId));
-      setDeleteConfirm(null);
-    } catch (err) {
-      console.error("Failed to delete proposal:", err);
-      alert("Failed to delete proposal");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const downloadCsv = (leads: ProposalRecord[]) => {
-    const headers = [
-      "Proposal ID",
-      "Customer",
-      "Company",
-      "Email",
-      "Model",
-      "Date",
-    ];
-
-    const rows = leads.map((lead) => [
-      `"${lead.proposal_id}"`,
-      `"${lead.customer_name || ""}"`,
-      `"${lead.company_name || ""}"`,
-      `"${lead.email || ""}"`,
-      `"${lead.product_model || ""}"`,
-      `"${new Date(lead.created_at).toLocaleDateString()}"`,
-    ]);
-
-    const csv = [headers, ...rows]
-      .map((row) => row.join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Panasonic_Proposal_Leads_${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleExportCsv = () => {
-    downloadCsv(filteredProposals);
-  };
-
-  const totalPages = Math.ceil(filteredProposals.length / ITEMS_PER_PAGE);
-  const paginatedProposals = filteredProposals.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  const generatePageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisible = 9;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 5) {
-        for (let i = 1; i <= maxVisible; i++) {
-          pages.push(i);
-        }
-        pages.push("...");
-        pages.push(totalPages);
-      } else if (currentPage > totalPages - 5) {
-        pages.push(1);
-        pages.push("...");
-        for (let i = totalPages - maxVisible + 1; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push("...");
-        for (let i = currentPage - 3; i <= currentPage + 3; i++) {
-          pages.push(i);
-        }
-        pages.push("...");
-        pages.push(totalPages);
-      }
-    }
-
-    return pages;
-  };
-
-  return (
-    <AdminCard>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ marginTop: 0, marginBottom: 8 }}>Proposal Leads</h2>
-        <p style={{ color: "#666", marginTop: 0 }}>
-          Review and track automated proposal generation requests submitted by potential clients.
-        </p>
-      </div>
-
-      <div style={{ marginBottom: 20, display: "flex", gap: 12, alignItems: "center" }}>
-        <input
-          type="text"
-          placeholder="Search customer, company or model..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            flex: 1,
-            padding: "10px 12px",
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            fontSize: 14,
-          }}
-        />
-        <button
-          onClick={handleExportCsv}
-          disabled={isLoading || filteredProposals.length === 0}
-          style={{
-            padding: "10px 16px",
-            background: "#0052cc",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            cursor: isLoading || filteredProposals.length === 0 ? "not-allowed" : "pointer",
-            fontWeight: 600,
-          }}
-        >
-          Export CSV
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div style={{ padding: 40, textAlign: "center", color: "#666" }}>
-          Loading proposals...
-        </div>
-      ) : filteredProposals.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", color: "#666" }}>
-          {proposals.length === 0 ? "No proposals yet" : "No proposals match your search"}
-        </div>
-      ) : (
-        <>
-          <AdminTable>
-            <thead>
-              <tr style={{ background: "#0052cc", color: "#fff" }}>
-                <th style={{ padding: "12px 16px", textAlign: "center", width: "30px" }}>
-                  <input type="checkbox" style={{ cursor: "pointer" }} />
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "140px" }}>
-                  Proposal ID
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "130px" }}>
-                  Customer
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "140px" }}>
-                  Company
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "200px" }}>
-                  Email
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "110px" }}>
-                  Model
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "100px" }}>
-                  Date ▼
-                </th>
-                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, width: "70px" }}>
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedProposals.map((proposal) => (
-                <tr
-                  key={proposal.id}
-                  style={{
-                    borderBottom: "1px solid #eee",
-                  }}
-                >
-                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                    <input type="checkbox" style={{ cursor: "pointer" }} />
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 500, wordBreak: "break-word" }}>
-                    {proposal.proposal_id}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, wordBreak: "break-word" }}>
-                    {proposal.customer_name}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, wordBreak: "break-word" }}>
-                    {proposal.company_name}
-                  </td>
-                  <td
-                    style={{
-                      padding: "12px 16px",
-                      fontSize: 13,
-                      color: "#0052cc",
-                      wordBreak: "break-all",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                    title={proposal.email}
-                  >
-                    {proposal.email}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, wordBreak: "break-word" }}>
-                    {proposal.product_model}
-                  </td>
-                  <td style={{ padding: "12px 16px", fontSize: 13, whiteSpace: "nowrap" }}>
-                    {formatDate(proposal.created_at)}
-                  </td>
-                  <td style={{ padding: "12px 16px", textAlign: "center" }}>
-                    <button
-                      onClick={() => setDeleteConfirm(proposal.id)}
-                      style={{
-                        padding: "5px 10px",
-                        background: "#f44336",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 4,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </AdminTable>
-
-          {totalPages > 1 && (
-            <div
-              style={{
-                marginTop: 20,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                style={{
-                  padding: "8px 12px",
-                  background: currentPage === 1 ? "#f0f0f0" : "#fff",
-                  color: currentPage === 1 ? "#999" : "#333",
-                  border: "1px solid #ddd",
-                  borderRadius: 4,
-                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}
-              >
-                Previous
-              </button>
-
-              {generatePageNumbers().map((page, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => typeof page === "number" && setCurrentPage(page)}
-                  disabled={page === "..." || page === currentPage}
-                  style={{
-                    padding: "8px 12px",
-                    minWidth: "36px",
-                    background:
-                      page === currentPage
-                        ? "#0052cc"
-                        : page === "..."
-                        ? "transparent"
-                        : "#fff",
-                    color: page === currentPage ? "#fff" : "#333",
-                    border: page === "..." ? "none" : "1px solid #ddd",
-                    borderRadius: 4,
-                    cursor:
-                      page === "..." || page === currentPage ? "default" : "pointer",
-                    fontSize: 13,
-                    fontWeight: page === currentPage ? 600 : 500,
-                  }}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                style={{
-                  padding: "8px 12px",
-                  background: currentPage === totalPages ? "#f0f0f0" : "#fff",
-                  color: currentPage === totalPages ? "#999" : "#333",
-                  border: "1px solid #ddd",
-                  borderRadius: 4,
-                  cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 500,
-                }}
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {deleteConfirm && (
-        <div
-          onClick={() => setDeleteConfirm(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,.45)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 1001,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: 30,
-              maxWidth: 400,
-              boxShadow: "0 4px 20px rgba(0,0,0,.15)",
-            }}
-          >
-            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Delete Proposal?</h3>
-            <p style={{ color: "#666", marginBottom: 24 }}>
-              This action cannot be undone. The proposal will be permanently deleted.
-            </p>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={isDeleting}
-                style={{
-                  flex: 1,
-                  padding: "10px 16px",
-                  background: "#f0f0f0",
-                  color: "#333",
-                  border: "1px solid #ddd",
-                  borderRadius: 6,
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                disabled={isDeleting}
-                style={{
-                  flex: 1,
-                  padding: "10px 16px",
-                  background: "#f44336",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  fontWeight: 600,
-                  opacity: isDeleting ? 0.6 : 1,
-                }}
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </AdminCard>
-  );
-}
-</file>
-
 <file path="src/components/admin/SettingsPage.tsx">
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
@@ -3172,24 +2797,6 @@ export const getSeriesFromModel = (
   }
 
   return "PFP";
-};
-</file>
-
-<file path="src/lib/pdf/drawMarketingCoverPage.ts">
-import jsPDF from "jspdf";
-
-export const drawMarketingCoverPage = (
-  doc: jsPDF,
-  coverImage: string
-): void => {
-  doc.addImage(
-    coverImage,
-    "JPEG",
-    0,
-    0,
-    210,
-    297
-  );
 };
 </file>
 
@@ -3924,17 +3531,6 @@ export const SeriesAdminService = {
 };
 
 export default SeriesAdminService;
-</file>
-
-<file path="src/types/ProposalInfo.ts">
-export interface ProposalInfo {
-  projectName: string;
-  customerName: string;
-  companyName: string;
-  customerEmail: string;
-  phoneNumber?: string;
-  location?: string;
-}
 </file>
 
 <file path="src/types/SeriesAdmin.ts">
@@ -5514,35 +5110,6 @@ export const assignPowerChains = (
 };
 </file>
 
-<file path="src/lib/pdf/addBrochurePages.ts">
-import jsPDF from "jspdf";
-
-interface BrochureData {
-  coverImage: string;
-  brochurePages: string[];
-}
-
-export const addBrochurePages = (
-  doc: jsPDF,
-  brochure: BrochureData
-): void => {
-  // Add ALL brochure pages from Supabase (starting with index 0)
-  // The brochurePages array contains the actual marketing brochure pages
-  // in order: page 1 (cover/intro), page 2, page 3, etc.
-  brochure.brochurePages.forEach((page) => {
-    doc.addPage();
-    doc.addImage(
-      page,
-      "JPEG",
-      0,
-      0,
-      210,
-      297
-    );
-  });
-};
-</file>
-
 <file path="src/lib/pdf/addPdfFooter.ts">
 import jsPDF from "jspdf";
 
@@ -5596,177 +5163,49 @@ export const applyGlobalPageTemplate = (
 };
 </file>
 
-<file path="src/lib/pdf/drawPowerDiagramPage.ts">
+<file path="src/lib/pdf/drawMarketingCoverPage.ts">
 import jsPDF from "jspdf";
-import { ConfigurationResult } from "../../types/ConfigurationResult";
-import { POWER_RULES } from "../rules/PowerRules";
 
-/*
- * Power Flow Diagram Theme
- * ------------------------
- * This page intentionally uses a single monochrome engineering theme.
- * Colour identifies the engineering layer (Power), while the chain
- * labels (A, B, C...) identify individual power chains.
+/**
+ * drawMarketingCoverPage
+ * Adds the EDM/marketing cover image to the PDF
+ * 
+ * ENHANCED: Validates the coverImage URL before attempting to add it
+ * Throws a descriptive error if the image is missing or invalid
+ * 
+ * @param doc - jsPDF document instance
+ * @param coverImage - The EDM/cover image URL or base64 string
+ * @throws Error if coverImage is null, undefined, or empty
  */
-const POWER_THEME = {
-  fill: [245, 245, 245],
-  line: [0, 0, 0],
-  border: [180, 180, 180],
-};
-
-function getPowerTheme() {
-  return POWER_THEME;
-}
-
-/*
- * Generates the Power Flow Diagram page for the proposal PDF.
- *
- * Responsibilities:
- * - Render the cabinet layout received from the power assignment logic.
- * - Draw vertical power cable paths.
- * - Display the engineering assumptions used for power distribution.
- *
- * NOTE:
- * This file performs no power-routing calculations.
- * It only renders the assignmentGrid supplied by upstream business logic.
- */
-export const drawPowerDiagramPage = (
+export const drawMarketingCoverPage = (
   doc: jsPDF,
-  result: ConfigurationResult,
-  assignmentGrid: string[][]
+  coverImage: string | null | undefined
 ): void => {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-
-  // 1. Global page background
-  doc.setFillColor(244, 247, 250);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  // 2. Page header
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 85, 165);
-  doc.text("DISPLAY SOLUTIONS", 15, 35);
-
-  doc.setFontSize(22);
-  doc.setTextColor(30, 30, 30);
-  doc.text("POWER FLOW DIAGRAM", 15, 45);
-
-  doc.setDrawColor(210);
-  doc.line(15, 55, pageWidth - 15, 55);
-
-  // 3. Calculate printable grid dimensions.
-  const rows = assignmentGrid.length;
-  const cols = assignmentGrid[0].length;
-
-  const availableWidth = 160;
-  const availableHeight = 150;
-
-  const cellSize = Math.min(availableWidth / cols, availableHeight / rows);
-
-  const gridWidth = cols * cellSize;
-  const gridHeight = rows * cellSize;
-
-  const startX = (pageWidth - gridWidth) / 2;
-  const startY = 70;
-
-  // 4. White card container behind the engineering drawing.
-  const padding = 10;
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(220, 225, 230);
-  doc.roundedRect(
-    startX - padding,
-    startY - padding,
-    gridWidth + padding * 2,
-    gridHeight + padding * 2,
-    2,
-    2,
-    "FD"
-  );
-
-  // 5. Draw cabinets.
-  // Every cabinet uses the same light grey fill.
-  // Chain letters distinguish different power chains.
-  const theme = getPowerTheme();
-
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const chain = assignmentGrid[row][col];
-      const x = startX + col * cellSize;
-      const y = startY + row * cellSize;
-
-      doc.setFillColor(theme.fill[0], theme.fill[1], theme.fill[2]);
-      doc.setDrawColor(theme.border[0], theme.border[1], theme.border[2]);
-      doc.rect(x, y, cellSize, cellSize, "FD");
-
-      if (cellSize > 7) {
-        doc.setTextColor(theme.line[0], theme.line[1], theme.line[2]);
-        doc.setFontSize(7);
-        doc.text(chain, x + 1.5, y + 4);
-      }
-    }
+  // Validate that we have a valid image to work with
+  if (!coverImage || typeof coverImage !== "string" || coverImage.trim() === "") {
+    throw new Error(
+      "[drawMarketingCoverPage] Invalid cover image: " +
+      "coverImage must be a non-empty string (URL or base64). " +
+      `Received: ${JSON.stringify(coverImage)}`
+    );
   }
 
-  // 6. Build a lookup of cabinets belonging to each power chain.
-  const chainMap = new Map<string, { row: number; col: number }[]>();
-
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const chain = assignmentGrid[row][col];
-      if (!chainMap.has(chain)) chainMap.set(chain, []);
-      chainMap.get(chain)!.push({ row, col });
-    }
+  try {
+    doc.addImage(
+      coverImage,
+      "JPEG",
+      0,
+      0,
+      210,
+      297
+    );
+  } catch (error) {
+    throw new Error(
+      "[drawMarketingCoverPage] Failed to add cover image to PDF. " +
+      `Error: ${error instanceof Error ? error.message : String(error)}. ` +
+      `Image URL/data: ${coverImage.substring(0, 100)}...`
+    );
   }
-
-  // Draw one continuous vertical power cable per chain.
-  // Unlike the Data Flow Diagram, the cable is centred because this page
-  // represents the actual power path.
-  chainMap.forEach((points) => {
-    doc.setDrawColor(theme.line[0], theme.line[1], theme.line[2]);
-    doc.setLineWidth(1.2);
-
-    points.sort((a, b) => a.row - b.row);
-
-    const first = points[0];
-    const last = points[points.length - 1];
-
-    const x = startX + first.col * cellSize + cellSize / 2;
-    const y1 = startY + first.row * cellSize + cellSize / 2;
-    const y2 = startY + last.row * cellSize + cellSize / 2;
-
-    doc.line(x, y1, x, y2);
-
-    // Filled circle indicates the power feed entry point.
-    doc.setFillColor(theme.line[0], theme.line[1], theme.line[2]);
-    doc.circle(x, y1, 1.5, "F");
-  });
-
-  // Reset drawing state so later PDF pages are unaffected.
-  doc.setLineWidth(0.2);
-
-  // 7. Engineering notes.
-  const rulesY = startY + gridHeight + padding + 15;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(0, 85, 165);
-  doc.text("NOTE: POWER DISTRIBUTION RULES", 15, rulesY);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
-
-  doc.text(
-    `• Indoor Layouts: Maximum of ${POWER_RULES.indoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.indoor.voltage}V | ${POWER_RULES.indoor.cable}`,
-    15,
-    rulesY + 5
-  );
-
-  doc.text(
-    `• Outdoor Layouts: Maximum of ${POWER_RULES.outdoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.outdoor.voltage}V | ${POWER_RULES.outdoor.cable}`,
-    15,
-    rulesY + 9
-  );
 };
 </file>
 
@@ -6412,7 +5851,7 @@ export const BrochureUploadService = {
 
       const pagesToSave = pages.map((_, index) => ({
         pageNumber: index + 1,
-        imageUrl: imageUrls[index],
+        imageUrl: pages[index],
       }));
 
       // FIXED: Now passing seriesCode as required parameter
@@ -6578,6 +6017,19 @@ export const ProductSpecificationService = {
     return specs;
   },
 };
+</file>
+
+<file path="src/types/ProposalInfo.ts">
+// FILE: src/types/ProposalInfo.ts
+export interface ProposalInfo {
+  projectName: string;
+  customerName: string;
+  companyName: string;
+  customerEmail: string;
+  salesContactEmail: string;  // ← NOW MANDATORY
+  phoneNumber?: string;
+  location?: string;
+}
 </file>
 
 <file path="src/main.jsx">
@@ -7658,6 +7110,665 @@ export default function AddNewSeriesModal({
 }
 </file>
 
+<file path="src/components/admin/ProposalLeadsPage.tsx">
+import { useEffect, useState } from "react";
+import { ProposalService } from "../../services/ProposalService";
+import AdminCard from "./ui/AdminCard";
+
+export default function ProposalLeadsPage() {
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Sorting States
+  const [sortColumn, setSortColumn] = useState("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  // Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+
+  // Multi-Select State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Delete confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    try {
+      const data = await ProposalService.getProposals();
+      setProposals(data);
+    } catch (error) {
+      console.error("Failed to load proposals:", error);
+    }
+  }
+
+  // Handle single proposal deletion
+  const handleDeleteProposal = async (proposalId: string) => {
+    try {
+      setIsDeleting(true);
+      await ProposalService.deleteProposal(proposalId);
+      // Remove from local state immediately after successful DB deletion
+      setProposals(prev => prev.filter(p => p.id !== proposalId));
+      setDeleteConfirm(null);
+      console.log(`Proposal ${proposalId} deleted successfully`);
+    } catch (error) {
+      console.error("Failed to delete proposal:", error);
+      alert("Failed to delete proposal. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle bulk deletion
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
+    try {
+      setIsDeleting(true);
+      await ProposalService.deleteProposals(selectedIds);
+      // Remove from local state immediately after successful DB deletion
+      setProposals(prev => 
+        prev.filter(p => !selectedIds.includes(p.id))
+      );
+      setSelectedIds([]);
+      setDeleteConfirm(null);
+      console.log(`${selectedIds.length} proposals deleted successfully`);
+    } catch (error) {
+      console.error("Failed to delete proposals:", error);
+      alert("Failed to delete proposals. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Native CSV Data Assembly and File Trigger download
+  const downloadCsv = (leads: any[]) => {
+    const headers = [
+      "Proposal ID",
+      "Customer",
+      "Company",
+      "Email",
+      "Model",
+      "Date",
+    ];
+
+    const rows = leads.map((lead) => [
+      `"${lead.proposal_id}"`,
+      `"${lead.customer_name || ""}"`,
+      `"${lead.company_name || ""}"`,
+      `"${lead.email || ""}"`,
+      `"${lead.product_model || ""}"`,
+      `"${new Date(lead.created_at).toLocaleDateString()}"`,
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Panasonic_Proposal_Leads_${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    downloadCsv(filteredProposals);
+  };
+
+  // Sorting Toggle Handler Function
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  // Search Filtering + Sorting Pipeline Processing
+  const filteredProposals = [...proposals]
+    .filter((lead) => {
+      const query = searchQuery.toLowerCase();
+
+      return (
+        (lead.customer_name?.toLowerCase() || "").includes(query) ||
+        (lead.company_name?.toLowerCase() || "").includes(query) ||
+        (lead.product_model?.toLowerCase() || "").includes(query)
+      );
+    })
+    .sort((a, b) => {
+      let valueA: any;
+      let valueB: any;
+
+      switch (sortColumn) {
+        case "customer":
+          valueA = a.customer_name || "";
+          valueB = b.customer_name || "";
+          break;
+
+        case "company":
+          valueA = a.company_name || "";
+          valueB = b.company_name || "";
+          break;
+
+        case "status":
+          valueA = a.status || "";
+          valueB = b.status || "";
+          break;
+
+        default:
+          valueA = new Date(a.created_at).getTime();
+          valueB = new Date(b.created_at).getTime();
+      }
+
+      if (typeof valueA === "string") {
+        return sortDirection === "asc"
+          ? valueA.localeCompare(valueB)
+          : valueB.localeCompare(valueA);
+      }
+
+      return sortDirection === "asc"
+        ? valueA - valueB
+        : valueB - valueA;
+    });
+
+  // Page Computations Applied Strictly After Filtering and Sorting
+  const totalPages = Math.ceil(filteredProposals.length / rowsPerPage);
+
+  const paginatedProposals = filteredProposals.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+
+  // Select All & Page-Level Selection Helper Formulae
+  const currentPageIds = paginatedProposals.map((lead) => lead.id);
+
+  const allCurrentPageSelected =
+    currentPageIds.length > 0 &&
+    currentPageIds.every((id) => selectedIds.includes(id));
+
+  const toggleRow = (proposalId: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(proposalId)
+        ? prev.filter((id) => id !== proposalId)
+        : [...prev, proposalId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (allCurrentPageSelected) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !currentPageIds.includes(id))
+      );
+    } else {
+      setSelectedIds((prev) => [
+        ...new Set([...prev, ...currentPageIds]),
+      ]);
+    }
+  };
+
+  const selectedLeads = filteredProposals.filter((lead) =>
+    selectedIds.includes(lead.id)
+  );
+
+  return (
+    <AdminCard title="Proposal Leads">
+      <p style={{ margin: "0 0 20px 0", color: "#666" }}>
+        Review and track automated proposal generation requests submitted by potential clients.
+      </p>
+
+      {/* Action Row Layout */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 20,
+          gap: 16,
+        }}
+      >
+        <input
+          type="text"
+          placeholder="Search customer, company or model..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setCurrentPage(1);
+          }}
+          style={{
+            width: 350,
+            padding: 10,
+            borderRadius: 8,
+            border: "1px solid #D1D5DB",
+            outline: "none",
+          }}
+        />
+
+        <button
+          onClick={exportCsv}
+          style={{
+            padding: "10px 18px",
+            background: "#005BAC",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 14,
+          }}
+        >
+          Export CSV
+        </button>
+      </div>
+
+      {/* Selection Action Bar */}
+      {selectedIds.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "12px 16px",
+            marginBottom: 16,
+            background: "#EEF6FF",
+            border: "1px solid #CFE2FF",
+            borderRadius: 8,
+          }}
+        >
+          <span style={{ fontSize: 14, color: "#1E3A8A" }}>
+            <strong>{selectedIds.length}</strong> of <strong>{filteredProposals.length}</strong> filtered lead{filteredProposals.length !== 1 ? "s" : ""} selected
+          </span>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+            }}
+          >
+            <button
+              onClick={() => downloadCsv(selectedLeads)}
+              style={{
+                padding: "8px 14px",
+                background: "#005BAC",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              Export Selected CSV
+            </button>
+
+            <button
+              onClick={() => setDeleteConfirm("bulk")}
+              disabled={isDeleting}
+              style={{
+                padding: "8px 14px",
+                background: "#DC2626",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: isDeleting ? "not-allowed" : "pointer",
+                fontWeight: 600,
+                fontSize: 13,
+                opacity: isDeleting ? 0.6 : 1,
+              }}
+            >
+              {isDeleting ? "Deleting..." : "Delete Selected"}
+            </button>
+
+            <button
+              onClick={() => setSelectedIds([])}
+              disabled={isDeleting}
+              style={{
+                padding: "8px 14px",
+                background: "#fff",
+                border: "1px solid #D1D5DB",
+                color: "#374151",
+                borderRadius: 6,
+                cursor: isDeleting ? "not-allowed" : "pointer",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px",
+              borderRadius: 8,
+              maxWidth: 400,
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 10px 0", color: "#1F2937" }}>
+              {deleteConfirm === "bulk"
+                ? `Delete ${selectedIds.length} Proposal${selectedIds.length > 1 ? "s" : ""}?`
+                : "Delete Proposal?"}
+            </h3>
+            <p style={{ margin: "0 0 20px 0", color: "#6B7280", fontSize: 14 }}>
+              This action is permanent and cannot be undone. The proposal will be permanently deleted from the database.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+                style={{
+                  padding: "8px 16px",
+                  background: "#E5E7EB",
+                  color: "#374151",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  fontWeight: 500,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirm === "bulk") {
+                    handleBulkDelete();
+                  } else if (deleteConfirm && deleteConfirm !== "bulk") {
+                    handleDeleteProposal(deleteConfirm);
+                  }
+                }}
+                disabled={isDeleting}
+                style={{
+                  padding: "8px 16px",
+                  background: "#DC2626",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  fontWeight: 600,
+                  opacity: isDeleting ? 0.6 : 1,
+                }}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enterprise Table Layout */}
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: 25,
+        }}
+      >
+        <thead>
+          <tr>
+            <th style={{ ...thStyle, width: 50 }}>
+              <input
+                type="checkbox"
+                checked={allCurrentPageSelected}
+                onChange={toggleSelectAll}
+                style={{ cursor: "pointer" }}
+              />
+            </th>
+
+            <th style={thStyle}>Proposal ID</th>
+            
+            <th
+              style={{ ...thStyle, cursor: "pointer" }}
+              onClick={() => handleSort("customer")}
+            >
+              Customer {sortColumn === "customer" && (sortDirection === "asc" ? "▲" : "▼")}
+            </th>
+            
+            <th
+              style={{ ...thStyle, cursor: "pointer" }}
+              onClick={() => handleSort("company")}
+            >
+              Company {sortColumn === "company" && (sortDirection === "asc" ? "▲" : "▼")}
+            </th>
+            
+            <th style={thStyle}>Email</th>
+            <th style={thStyle}>Model</th>
+            
+            <th
+              style={{ ...thStyle, cursor: "pointer" }}
+              onClick={() => handleSort("date")}
+            >
+              Date {sortColumn === "date" && (sortDirection === "asc" ? "▲" : "▼")}
+            </th>
+            
+            <th
+              style={{
+                ...thStyle,
+                textAlign: "center",
+                cursor: "pointer",
+              }}
+              onClick={() => handleSort("status")}
+            >
+              Status {sortColumn === "status" && (sortDirection === "asc" ? "▲" : "▼")}
+            </th>
+
+            <th style={{ ...thStyle, textAlign: "center", width: 60 }}>
+              Action
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {paginatedProposals.map((lead, index) => (
+            <tr
+              key={lead.id}
+              style={{
+                background: index % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
+              }}
+            >
+              <td style={tdStyle}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(lead.id)}
+                  onChange={() => toggleRow(lead.id)}
+                  style={{ cursor: "pointer" }}
+                />
+              </td>
+
+              <td
+                style={{
+                  ...tdStyle,
+                  fontFamily: "monospace",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#4B5563",
+                }}
+              >
+                {lead.proposal_id}
+              </td>
+
+              <td style={tdStyle}>{lead.customer_name}</td>
+              <td style={tdStyle}>{lead.company_name}</td>
+
+              <td style={{ ...tdStyle, color: "#005BAC", fontWeight: 500 }}>
+                {lead.email}
+              </td>
+
+              <td style={tdStyle}>
+                <span style={{ background: "#E8F0FE", padding: "4px 8px", borderRadius: 4, fontSize: "0.9em", fontWeight: 500, color: "#1E3A8A" }}>
+                  {lead.product_model}
+                </span>
+              </td>
+
+              <td style={tdStyle}>
+                {new Date(lead.created_at).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </td>
+
+              <td style={{ ...tdStyle, textAlign: "center" }}>
+                <span
+                  style={{
+                    background: lead.status === "Sent" ? "#DEF7EC" : "#FEF3C7",
+                    color: lead.status === "Sent" ? "#03543F" : "#92400E",
+                    padding: "4px 10px",
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    display: "inline-block",
+                  }}
+                >
+                  {lead.status || "New"}
+                </span>
+              </td>
+
+              <td style={{ ...tdStyle, textAlign: "center" }}>
+                <button
+                  onClick={() => setDeleteConfirm(lead.id)}
+                  disabled={isDeleting}
+                  style={{
+                    padding: "4px 8px",
+                    background: "#FEE2E2",
+                    color: "#DC2626",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: isDeleting ? "not-allowed" : "pointer",
+                    fontWeight: 600,
+                    fontSize: 12,
+                    opacity: isDeleting ? 0.6 : 1,
+                  }}
+                  title="Delete this proposal"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Footer Pagination Control */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 20,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+          style={{
+            padding: "6px 10px",
+            background: currentPage === 1 ? "#E5E7EB" : "#005BAC",
+            color: currentPage === 1 ? "#9CA3AF" : "white",
+            border: "none",
+            borderRadius: 4,
+            cursor: currentPage === 1 ? "not-allowed" : "pointer",
+          }}
+        >
+          ← Prev
+        </button>
+
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            style={{
+              padding: "6px 10px",
+              background: currentPage === page ? "#005BAC" : "#E5E7EB",
+              color: currentPage === page ? "white" : "#374151",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              fontWeight: currentPage === page ? 600 : 400,
+            }}
+          >
+            {page}
+          </button>
+        ))}
+
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+          style={{
+            padding: "6px 10px",
+            background: currentPage === totalPages ? "#E5E7EB" : "#005BAC",
+            color: currentPage === totalPages ? "#9CA3AF" : "white",
+            border: "none",
+            borderRadius: 4,
+            cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+          }}
+        >
+          Next →
+        </button>
+      </div>
+    </AdminCard>
+  );
+}
+
+// Styling Constants
+const thStyle = {
+  padding: "12px 16px",
+  textAlign: "left" as const,
+  fontWeight: 600,
+  background: "#F9FAFB",
+  borderBottom: "2px solid #E5E7EB",
+  color: "#374151",
+  fontSize: 14,
+};
+
+const tdStyle = {
+  padding: "12px 16px",
+  borderBottom: "1px solid #E5E7EB",
+  color: "#4B5563",
+  fontSize: 14,
+};
+</file>
+
 <file path="src/components/admin/QuickAddModelForm.tsx">
 import { useEffect, useState } from "react";
 import { Product } from "../../types/Product";
@@ -8198,8 +8309,297 @@ function CheckboxField({
 }
 </file>
 
+<file path="src/lib/pdf/drawPowerDiagramPage.ts">
+import jsPDF from "jspdf";
+import { ConfigurationResult } from "../../types/ConfigurationResult";
+import { POWER_RULES } from "../rules/PowerRules";
+
+/*
+ * Power Flow Diagram Theme
+ * ------------------------
+ * This page intentionally uses a single monochrome engineering theme.
+ * Colour identifies the engineering layer (Power), while the chain
+ * labels (A, B, C...) identify individual power chains.
+ */
+const POWER_THEME = {
+  fill: [245, 245, 245],
+  line: [0, 0, 0],
+  border: [180, 180, 180],
+};
+
+function getPowerTheme() {
+  return POWER_THEME;
+}
+
+/*
+ * Generates the Power Flow Diagram page for the proposal PDF.
+ *
+ * Responsibilities:
+ * - Render the cabinet layout received from the power assignment logic.
+ * - Draw vertical power cable paths.
+ * - Display the engineering assumptions used for power distribution.
+ *
+ * NOTE:
+ * This file performs no power-routing calculations.
+ * It only renders the assignmentGrid supplied by upstream business logic.
+ * 
+ * ✅ CHANGE: Removed thick borders around diagram to match Data Flow page
+ * Only header divider line remains (consistent with all pages)
+ */
+export const drawPowerDiagramPage = (
+  doc: jsPDF,
+  result: ConfigurationResult,
+  assignmentGrid: string[][]
+): void => {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // 1. Global page background
+  doc.setFillColor(244, 247, 250);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  // 2. Page header
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 85, 165);
+  doc.text("DISPLAY SOLUTIONS", 15, 35);
+
+  doc.setFontSize(22);
+  doc.setTextColor(30, 30, 30);
+  doc.text("POWER FLOW DIAGRAM", 15, 45);
+
+  // ✅ CHANGE: Keep only the header divider line (consistent with all pages)
+  doc.setDrawColor(210);
+  doc.line(15, 55, pageWidth - 15, 55);
+
+  // 3. Calculate printable grid dimensions.
+  const rows = assignmentGrid.length;
+  const cols = assignmentGrid[0].length;
+
+  const availableWidth = 160;
+  const availableHeight = 150;
+
+  const cellSize = Math.min(availableWidth / cols, availableHeight / rows);
+
+  const gridWidth = cols * cellSize;
+  const gridHeight = rows * cellSize;
+
+  const startX = (pageWidth - gridWidth) / 2;
+  const startY = 70;
+
+  // ✅ CHANGE: REMOVED the white card container with borders
+  // The diagram now renders without a surrounding box
+  // This matches the Data Flow Diagram page styling
+
+  // 4. Draw cabinets.
+  // Every cabinet uses the same light grey fill.
+  // Chain letters distinguish different power chains.
+  const theme = getPowerTheme();
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const chain = assignmentGrid[row][col];
+      const x = startX + col * cellSize;
+      const y = startY + row * cellSize;
+
+      doc.setFillColor(theme.fill[0], theme.fill[1], theme.fill[2]);
+      doc.setDrawColor(theme.border[0], theme.border[1], theme.border[2]);
+      doc.rect(x, y, cellSize, cellSize, "FD");
+
+      if (cellSize > 7) {
+        doc.setTextColor(theme.line[0], theme.line[1], theme.line[2]);
+        doc.setFontSize(7);
+        doc.text(chain, x + 1.5, y + 4);
+      }
+    }
+  }
+
+  // 5. Build a lookup of cabinets belonging to each power chain.
+  const chainMap = new Map<string, { row: number; col: number }[]>();
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const chain = assignmentGrid[row][col];
+      if (!chainMap.has(chain)) chainMap.set(chain, []);
+      chainMap.get(chain)!.push({ row, col });
+    }
+  }
+
+  // Draw one continuous vertical power cable per chain.
+  // Unlike the Data Flow Diagram, the cable is centred because this page
+  // represents the actual power path.
+  chainMap.forEach((points) => {
+    doc.setDrawColor(theme.line[0], theme.line[1], theme.line[2]);
+    doc.setLineWidth(1.2);
+
+    points.sort((a, b) => a.row - b.row);
+
+    const first = points[0];
+    const last = points[points.length - 1];
+
+    const x = startX + first.col * cellSize + cellSize / 2;
+    const y1 = startY + first.row * cellSize + cellSize / 2;
+    const y2 = startY + last.row * cellSize + cellSize / 2;
+
+    doc.line(x, y1, x, y2);
+
+    // Filled circle indicates the power feed entry point.
+    doc.setFillColor(theme.line[0], theme.line[1], theme.line[2]);
+    doc.circle(x, y1, 1.5, "F");
+  });
+
+  // Reset drawing state so later PDF pages are unaffected.
+  doc.setLineWidth(0.2);
+
+  // 6. Engineering notes.
+  const rulesY = startY + gridHeight + 15;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(0, 85, 165);
+  doc.text("NOTE: POWER DISTRIBUTION RULES", 15, rulesY);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
+
+  doc.text(
+    `• Indoor Layouts: Maximum of ${POWER_RULES.indoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.indoor.voltage}V | ${POWER_RULES.indoor.cable}`,
+    15,
+    rulesY + 5
+  );
+
+  doc.text(
+    `• Outdoor Layouts: Maximum of ${POWER_RULES.outdoor.maxCabinetsPerChain} cabinets per chain | ${POWER_RULES.outdoor.voltage}V | ${POWER_RULES.outdoor.cable}`,
+    15,
+    rulesY + 9
+  );
+};
+</file>
+
+<file path="src/mappers/ProductMapper.ts">
+import { Product } from "../types/Product";
+
+/**
+ * Utility object responsible for transforming product data between the backend 
+ * database format and the frontend TypeScript interface.
+ * * This creates a boundary layer that protects the frontend from database schema 
+ * changes and handles the conversion between SQL snake_case and JavaScript camelCase.
+ */
+export const ProductMapper = {
+  /**
+   * Converts a raw row retrieved from the Supabase database into a strictly typed Product object.
+   *
+   * @param {any} row - The raw data object returned from a Supabase query (typically using snake_case keys).
+   * @returns {Product} The formatted Product object ready for use in the React frontend.
+   */
+  fromDatabase(row: any): Product {
+    // We map snake_case database columns to camelCase frontend properties here.
+    // This ensures our UI components never have to deal with backend naming conventions.
+    return {
+      id: row.id,
+      model: row.model,
+      seriesCode: row.series_code,
+      applicationType: row.application_type,
+      pitch: row.pitch,
+      brightness: row.brightness,
+      cabinetWidth: row.cabinet_width,
+      cabinetHeight: row.cabinet_height,
+      cabinetResolutionW: row.cabinet_resolution_w,
+      cabinetResolutionH: row.cabinet_resolution_h,
+      modulesPerCabinet: row.modules_per_cabinet,
+      maxPowerPerM2:
+        row.max_power_per_m2,
+
+      avgPowerPerM2:
+        row.avg_power_per_m2,
+
+      // NEW: Convert screenWeightPerM2 from string to number
+      // Supabase returns this as string, but calculation needs numeric type
+      screenWeightPerM2: row.screenWeightPerM2
+        ? Number(row.screenWeightPerM2)
+        : undefined,
+    };
+  },
+
+  /**
+   * Transforms a frontend Product object back into the schema format required by the Supabase database.
+   *
+   * @param {Product} product - The strictly typed frontend Product object.
+   * @returns {object} A plain object with snake_case keys, ready to be passed into a Supabase insert or update query.
+   */
+  toDatabase(product: Product) {
+    // The 'id' field is intentionally omitted from this mapping.
+    // For inserts, the database auto-generates the UUID. 
+    // For updates, the ID is typically passed as a match() parameter in the Supabase query, 
+    // not in the body of the update payload itself.
+    return {
+      model: product.model,
+      series_code: product.seriesCode,
+      application_type: product.applicationType,
+      pitch: product.pitch,
+      brightness: product.brightness,
+      cabinet_width: product.cabinetWidth,
+      cabinet_height: product.cabinetHeight,
+      cabinet_resolution_w: product.cabinetResolutionW,
+      cabinet_resolution_h: product.cabinetResolutionH,
+      modules_per_cabinet: product.modulesPerCabinet,
+      max_power_per_m2:
+        product.maxPowerPerM2,
+
+      avg_power_per_m2:
+        product.avgPowerPerM2,
+    };
+  },
+};
+</file>
+
+<file path="src/services/seriesService.ts">
+import { SeriesRepository } from "../repositories/SeriesRepository";
+
+export const SeriesService = {
+  async getSeries(
+    code: string
+  ) {
+    return await SeriesRepository.getByCode(
+      code
+    );
+  },
+
+  async getAllSeries() {
+    return await SeriesRepository.getAll();
+  },
+};
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <title>Panasonic PitchLine</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
+</file>
+
 <file path="src/components/configurator/ExportProposalModal.tsx">
-import { useState, useCallback, useMemo, type ReactElement } from "react";
+import { useState, useCallback, useMemo, ReactElement } from "react";
 import { ProposalInfo } from "../../types/ProposalInfo";
 
 interface ExportProposalModalProps {
@@ -8217,6 +8617,7 @@ export const ExportProposalModal = ({
   const [customerName, setCustomerName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [salesContactEmail, setSalesContactEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [location, setLocation] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -8232,10 +8633,15 @@ export const ExportProposalModal = ({
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       newErrors.customerEmail = "Invalid email format";
     }
+    if (!salesContactEmail.trim()) {
+      newErrors.salesContactEmail = "Sales contact email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(salesContactEmail)) {
+      newErrors.salesContactEmail = "Invalid email format";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [projectName, customerName, companyName, customerEmail]);
+  }, [projectName, customerName, companyName, customerEmail, salesContactEmail]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent<HTMLFormElement>): void => {
@@ -8246,13 +8652,14 @@ export const ExportProposalModal = ({
           customerName,
           companyName,
           customerEmail,
+          salesContactEmail,
           phoneNumber: phoneNumber || undefined,
           location: location || undefined,
         };
         onSubmit(formData);
       }
     },
-    [projectName, customerName, companyName, customerEmail, phoneNumber, location, validateForm, onSubmit]
+    [projectName, customerName, companyName, customerEmail, salesContactEmail, phoneNumber, location, validateForm, onSubmit]
   );
 
   const Field = useMemo(
@@ -8366,12 +8773,21 @@ export const ExportProposalModal = ({
           />
 
           <Field
-            label="Enter Email"
+            label="Customer Email"
             value={customerEmail}
             onChange={setCustomerEmail}
             placeholder="Customer email"
             required
             error={errors.customerEmail}
+          />
+
+          <Field
+            label="Sales Contact Email"
+            value={salesContactEmail}
+            onChange={setSalesContactEmail}
+            placeholder="Your email"
+            required
+            error={errors.salesContactEmail}
           />
 
           <Field
@@ -8434,6 +8850,60 @@ export const ExportProposalModal = ({
 };
 </file>
 
+<file path="src/lib/pdf/addBrochurePages.ts">
+import jsPDF from "jspdf";
+
+interface BrochureData {
+  coverImage: string;
+  brochurePages: string[];
+}
+
+export const addBrochurePages = (
+  doc: jsPDF,
+  brochure: BrochureData
+): void => {
+  // Validate brochure object
+  if (!brochure) {
+    throw new Error("[addBrochurePages] Invalid brochure object");
+  }
+
+  // Validate brochurePages array
+  if (!Array.isArray(brochure.brochurePages)) {
+    console.warn(
+      "[addBrochurePages] brochurePages is not an array. " +
+      `Received: ${typeof brochure.brochurePages}. Skipping brochure pages.`
+    );
+    return;
+  }
+
+  // If no brochure pages, exit early
+  if (brochure.brochurePages.length === 0) {
+    console.info("[addBrochurePages] No brochure pages to add.");
+    return;
+  }
+
+  console.log(`[addBrochurePages] Adding ${brochure.brochurePages.length} brochure pages...`);
+
+  brochure.brochurePages.forEach((pageData, index) => {
+    try {
+      if (!pageData || typeof pageData !== "string") {
+        console.warn(`[addBrochurePages] Skipping invalid page at index ${index}`);
+        return;
+      }
+
+      doc.addPage();
+      doc.addImage(pageData, "JPEG", 0, 0, 210, 297);
+
+      console.log(`[addBrochurePages] Page ${index + 1} added successfully`);
+    } catch (error) {
+      console.error(`[addBrochurePages] Failed to add page ${index + 1}:`, error);
+    }
+  });
+
+  console.log(`[addBrochurePages] Finished adding brochure pages`);
+};
+</file>
+
 <file path="src/lib/pdf/drawDataDiagramPage.ts">
 import jsPDF from "jspdf";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
@@ -8458,13 +8928,6 @@ function getColorForChain(chain: string) {
  * representation of how LED cabinets should be grouped into LAN/Data
  * chains based on Panasonic's supported pixel limitations.
  *
- * High level flow:
- * 1. Calculate how many cabinets a single LAN cable can support.
- * 2. Assign every cabinet to a data chain (A, B, C...).
- * 3. Draw the cabinet grid.
- * 4. Draw coloured data cable paths for every chain.
- * 5. Display engineering rules used to generate the assignment.
- *
  * NOTE:
  * This file is responsible ONLY for rendering the PDF.
  * All engineering calculations are delegated to calculation helpers
@@ -8481,15 +8944,12 @@ export const drawDataDiagramPage = (
   // ==========================================
   // 1. GLOBAL PAGE BACKGROUND
   // ==========================================
-  // Paint the entire page with a light Panasonic-themed background
-  // before drawing any content.
   doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
   // ==========================================
-  // 2. PAGE TITLES
+  // 2. PAGE TITLES (matching Power Flow Diagram structure)
   // ==========================================
-  // Standard PDF page header used throughout the configurator.
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(0, 85, 165);
@@ -8729,241 +9189,6 @@ export const drawDataDiagramPage = (
 };
 </file>
 
-<file path="src/mappers/ProductMapper.ts">
-import { Product } from "../types/Product";
-
-/**
- * Utility object responsible for transforming product data between the backend 
- * database format and the frontend TypeScript interface.
- * * This creates a boundary layer that protects the frontend from database schema 
- * changes and handles the conversion between SQL snake_case and JavaScript camelCase.
- */
-export const ProductMapper = {
-  /**
-   * Converts a raw row retrieved from the Supabase database into a strictly typed Product object.
-   *
-   * @param {any} row - The raw data object returned from a Supabase query (typically using snake_case keys).
-   * @returns {Product} The formatted Product object ready for use in the React frontend.
-   */
-  fromDatabase(row: any): Product {
-    // We map snake_case database columns to camelCase frontend properties here.
-    // This ensures our UI components never have to deal with backend naming conventions.
-    return {
-      id: row.id,
-      model: row.model,
-      seriesCode: row.series_code,
-      applicationType: row.application_type,
-      pitch: row.pitch,
-      brightness: row.brightness,
-      cabinetWidth: row.cabinet_width,
-      cabinetHeight: row.cabinet_height,
-      cabinetResolutionW: row.cabinet_resolution_w,
-      cabinetResolutionH: row.cabinet_resolution_h,
-      modulesPerCabinet: row.modules_per_cabinet,
-      maxPowerPerM2:
-        row.max_power_per_m2,
-
-      avgPowerPerM2:
-        row.avg_power_per_m2,
-
-      // NEW: Convert screenWeightPerM2 from string to number
-      // Supabase returns this as string, but calculation needs numeric type
-      screenWeightPerM2: row.screenWeightPerM2
-        ? Number(row.screenWeightPerM2)
-        : undefined,
-    };
-  },
-
-  /**
-   * Transforms a frontend Product object back into the schema format required by the Supabase database.
-   *
-   * @param {Product} product - The strictly typed frontend Product object.
-   * @returns {object} A plain object with snake_case keys, ready to be passed into a Supabase insert or update query.
-   */
-  toDatabase(product: Product) {
-    // The 'id' field is intentionally omitted from this mapping.
-    // For inserts, the database auto-generates the UUID. 
-    // For updates, the ID is typically passed as a match() parameter in the Supabase query, 
-    // not in the body of the update payload itself.
-    return {
-      model: product.model,
-      series_code: product.seriesCode,
-      application_type: product.applicationType,
-      pitch: product.pitch,
-      brightness: product.brightness,
-      cabinet_width: product.cabinetWidth,
-      cabinet_height: product.cabinetHeight,
-      cabinet_resolution_w: product.cabinetResolutionW,
-      cabinet_resolution_h: product.cabinetResolutionH,
-      modules_per_cabinet: product.modulesPerCabinet,
-      max_power_per_m2:
-        product.maxPowerPerM2,
-
-      avg_power_per_m2:
-        product.avgPowerPerM2,
-    };
-  },
-};
-</file>
-
-<file path="src/repositories/ProposalRepository.ts">
-import { supabase } from "../lib/supabase";
-
-export interface ProposalRecord {
-  id: string;
-  proposal_id: string;
-  project_name: string;
-  customer_name: string;
-  company_name: string;
-  email: string;
-  product_model: string;
-  phone_number?: string;
-  location?: string;
-  configuration: Record<string, unknown>;
-  pdf_url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export class ProposalRepository {
-  static async create(proposal: Omit<ProposalRecord, "id" | "created_at" | "updated_at">): Promise<ProposalRecord> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .insert([proposal])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async getById(id: string): Promise<ProposalRecord | null> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .select()
-      .eq("id", id)
-      .single();
-
-    if (error && error.code !== "PGRST116") throw error;
-    return data || null;
-  }
-
-  static async getByProposalId(proposalId: string): Promise<ProposalRecord | null> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .select()
-      .eq("proposal_id", proposalId)
-      .single();
-
-    if (error && error.code !== "PGRST116") throw error;
-    return data || null;
-  }
-
-  static async getAll(): Promise<ProposalRecord[]> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .select()
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  static async update(
-    id: string,
-    updates: Partial<Omit<ProposalRecord, "id" | "created_at" | "updated_at">>
-  ): Promise<ProposalRecord> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  static async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from("proposals")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-  }
-
-  static async deleteByProposalId(proposalId: string): Promise<void> {
-    const { error } = await supabase
-      .from("proposals")
-      .delete()
-      .eq("proposal_id", proposalId);
-
-    if (error) throw error;
-  }
-
-  static async search(searchTerm: string): Promise<ProposalRecord[]> {
-    const { data, error } = await supabase
-      .from("proposals")
-      .select()
-      .or(
-        `project_name.ilike.%${searchTerm}%,customer_name.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,product_model.ilike.%${searchTerm}%`
-      )
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data || [];
-  }
-}
-</file>
-
-<file path="src/services/seriesService.ts">
-import { SeriesRepository } from "../repositories/SeriesRepository";
-
-export const SeriesService = {
-  async getSeries(
-    code: string
-  ) {
-    return await SeriesRepository.getByCode(
-      code
-    );
-  },
-
-  async getAllSeries() {
-    return await SeriesRepository.getAll();
-  },
-};
-</file>
-
-<file path="index.html">
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
-
-  <title>Panasonic PitchLine</title>
-</head>
-
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
-
-</html>
-</file>
-
 <file path="src/pages/AdminDashboard.tsx">
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9158,41 +9383,6 @@ export const ProductSpecificationRepository = {
 };
 </file>
 
-<file path="src/services/brochureService.ts">
-import { SeriesAdminRepository } from "../repositories/SeriesAdminRepository";
-import { BrochureUploadRepository } from "../repositories/BrochureUploadRepository";
-
-/**
- * getBrochureForSeries
- * Fetches series EDM image and brochure pages for a given series code
- * Returns EDM image as coverImage and brochure pages as an array
- * 
- * @param seriesCode - The series code (e.g., "PFP", "PIK")
- * @returns Object with coverImage (EDM URL) and brochurePages (array of image URLs)
- */
-export const getBrochureForSeries = async (
-  seriesCode: string
-) => {
-  // Get series by code to retrieve EDM image URL
-  const series = await SeriesAdminRepository.getSeriesByCode(seriesCode);
-
-  if (!series) {
-    throw new Error(`Series not found: ${seriesCode}`);
-  }
-
-  // Get brochure pages for this series
-  const pages = await BrochureUploadRepository.getPagesBySeries(seriesCode);
-
-  return {
-    // EDM image becomes the cover image for the PDF
-    coverImage: series.edm_image_url,
-
-    // Map pages to just the image URLs
-    brochurePages: pages.map((page) => page.image_url),
-  };
-};
-</file>
-
 <file path="src/types/ConfigurationResult.ts">
 // src/types/ConfigurationResult.ts
 
@@ -9228,77 +9418,170 @@ export interface ConfigurationResult {
 }
 </file>
 
-<file path="src/services/ProposalService.ts">
-import { ProposalRepository } from "../repositories/ProposalRepository";
-import { Product } from "../types/Product";
-import { ConfigurationResult } from "../types/ConfigurationResult";
+<file path="src/repositories/ProposalRepository.ts">
+import { supabase } from "../lib/supabase";
+
+export const ProposalRepository = {
+
+  async create(data: any) {
+    const { error } = await supabase
+      .from("proposals")
+      .insert(data);
+
+    if (error) {
+      console.error("Proposal insert error:", error);
+      throw error;
+    }
+  },
+
+  async getAll() {
+    const { data, error } = await supabase
+      .from("proposals")
+      .select("*")
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    return data;
+  },
+
+  /**
+   * Delete a single proposal by ID
+   * @param proposalId - The proposal ID to delete
+   */
+  async deleteById(id: string) {
+    const { error } = await supabase
+      .from("proposals")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(`Proposal delete error for ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete multiple proposals by ID array
+   * @param proposalIds - Array of proposal IDs to delete
+   */
+  async deleteMultiple(ids: string[]) {
+    if (!ids || ids.length === 0) {
+      throw new Error("No proposal IDs provided for deletion");
+    }
+
+    const { error } = await supabase
+      .from("proposals")
+      .delete()
+      .in("id", ids);
+
+    if (error) {
+      console.error(`Proposal bulk delete error:`, error);
+      throw error;
+    }
+  },
+
+};
+</file>
+
+<file path="src/services/brochureService.ts">
+import { SeriesAdminRepository } from "../repositories/SeriesAdminRepository";
+import { BrochureUploadRepository } from "../repositories/BrochureUploadRepository";
 
 /**
- * Service layer responsible for handling proposal and lead generation data.
- * Acts as the bridge between the complex frontend state (user inputs, product specs, 
- * calculated results) and the flat database schema used in Supabase.
+ * Global fallback EDM image URL
+ * Used when a series doesn't have a custom EDM image
  */
-export const ProposalService = {
-  /**
-   * Compiles data from various frontend sources into a single, flat database record.
-   * This is triggered when a user successfully exports a PDF, acting as the lead capture mechanism.
-   *
-   * @param {any} proposalData - The customer information collected from the export modal form.
-   * @param {Product} product - The specific LED product model the user configured.
-   * @param {ConfigurationResult} result - The mathematical and physical output from the configuration engine.
-   * @param {number} width - The original target width requested by the user.
-   * @param {number} height - The original target height requested by the user.
-   * @returns {Promise<any>} A promise that resolves when the lead is successfully saved to the database.
-   */
-  async createProposal(
-    proposalData: any,
-    product: Product,
-    result: ConfigurationResult,
-    width: number,
-    height: number
-  ) {
-    // We flatten the nested frontend state (proposal info + product specs + calculated results) 
-    // into a single object with snake_case keys to strictly match the Supabase table schema.
-    return ProposalRepository.create({
-      proposal_id: proposalData.proposalId,
-      project_name: proposalData.projectName,
-      customer_name: proposalData.customerName,
-      company_name: proposalData.companyName,
-      email: proposalData.email,
+const GLOBAL_EDM_IMAGE_URL =
+  "https://srcmsjpvkjnhbwvycjzo.supabase.co/storage/v1/object/public/brochures/edm/global-edm.jpg";
 
-      // NEW
-      // Supabase/Postgres prefers explicit NULLs over undefined for empty optional fields.
-      // This fallback prevents potential database insertion errors if the user left these blank.
-      phone_number: proposalData.phoneNumber || null,
+/**
+ * getBrochureForSeries
+ * Fetches series EDM image and brochure pages for a given series code
+ * Returns EDM image as coverImage and brochure pages as an array
+ * 
+ * ENHANCED: Now handles missing series records and null EDM URLs gracefully
+ * 
+ * @param seriesCode - The series code (e.g., "PFP", "PIQ")
+ * @returns Object with coverImage (EDM URL) and brochurePages (array of image URLs)
+ * @throws Error only on database connection failures, not on missing data
+ */
+export const getBrochureForSeries = async (
+  seriesCode: string
+) => {
+  let series = await SeriesAdminRepository.getSeriesByCode(seriesCode);
 
-      // NEW
-      location: proposalData.location || null,
+  // CASE 1: Series record doesn't exist in the database
+  // This can happen if PIQ series was added to products but not to series table
+  if (!series) {
+    console.warn(
+      `[BrochureService] Series record not found for code: ${seriesCode}. ` +
+      `Creating a minimal series record with global EDM image.`
+    );
 
-      product_model: product.model,
+    // Try to create a minimal series record on-the-fly
+    // This ensures subsequent calls won't fail
+    try {
+      series = await SeriesAdminRepository.createSeries({
+        code: seriesCode,
+        name: seriesCode, // Use series code as name temporarily
+        type: "standard",
+        edmImageUrl: GLOBAL_EDM_IMAGE_URL,
+      });
+      console.log(`[BrochureService] Created series record for: ${seriesCode}`);
+    } catch (createError) {
+      console.error(
+        `[BrochureService] Failed to create series record for ${seriesCode}:`,
+        createError
+      );
+      // Fall back to returning a minimal brochure object with global EDM
+      return {
+        coverImage: GLOBAL_EDM_IMAGE_URL,
+        brochurePages: [],
+      };
+    }
+  }
 
-      // Matches your Supabase schema
-      series_code: product.seriesCode,
-      application_type: product.applicationType,
-      screen_width: width,
-      screen_height: height,
-      actual_width: result.actualWidth,
-      actual_height: result.actualHeight,
-      resolution_w: result.resolutionW,
-      resolution_h: result.resolutionH,
-      total_cabinets: result.totalCabinets,
-      total_modules: result.totalModules,
-    });
-  },
+  // CASE 2: Series exists but has null/empty EDM image URL
+  // Use global fallback
+  let coverImage = series.edm_image_url || GLOBAL_EDM_IMAGE_URL;
 
-  /**
-   * Retrieves the complete list of generated proposals/leads.
-   * Used primarily by the Admin Dashboard to populate the leads table.
-   *
-   * @returns {Promise<any>} A promise resolving to an array of all recorded proposals.
-   */
-  async getProposals() {
-    return ProposalRepository.getAll();
-  },
+  if (!series.edm_image_url) {
+    console.warn(
+      `[BrochureService] Series ${seriesCode} has no EDM image URL. ` +
+      `Using global fallback image.`
+    );
+  }
+
+  // Try to fetch brochure pages for this series
+  let brochurePages: string[] = [];
+  try {
+    const pages = await BrochureUploadRepository.getPagesBySeries(seriesCode);
+    brochurePages = pages.map((page) => page.image_url);
+
+    if (pages.length === 0) {
+      console.info(
+        `[BrochureService] No brochure pages found for series: ${seriesCode}. ` +
+        `PDF will include only EDM cover.`
+      );
+    }
+  } catch (pageError) {
+    console.warn(
+      `[BrochureService] Failed to fetch brochure pages for ${seriesCode}:`,
+      pageError
+    );
+    // Continue gracefully - we have the EDM image at least
+    brochurePages = [];
+  }
+
+  return {
+    coverImage,
+    brochurePages,
+  };
 };
 </file>
 
@@ -10365,121 +10648,6 @@ export const calculateConfiguration = (
 };
 </file>
 
-<file path="src/lib/pdf/drawProposalSummaryPage.ts">
-import jsPDF from "jspdf";
-import { ProposalInfo } from "../../types/ProposalInfo";
-
-export function drawProposalSummaryPage(
-  doc: jsPDF,
-  proposalId: string,
-  proposalInfo: ProposalInfo,
-  generatedOn: string
-): void {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 20;
-  const contentWidth = pageWidth - 2 * margin;
-
-  // Page background
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-  // Panasonic header
-  doc.setFont("Arial", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(51, 51, 51);
-  doc.text("Panasonic", margin, 20);
-
-  // Tagline
-  doc.setFont("Arial", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(128, 128, 128);
-  doc.text("Create Today, Enrich Tomorrow", pageWidth - margin - 60, 20, { align: "right" });
-
-  // DISPLAY SOLUTIONS title
-  doc.setFont("Arial", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(68, 114, 196);
-  doc.text("DISPLAY SOLUTIONS", margin, 30);
-
-  // ENGINEERING PROPOSAL title
-  doc.setFont("Arial", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(51, 51, 51);
-  doc.text("ENGINEERING PROPOSAL", margin, 40);
-
-  // Proposal Information Box
-  const boxStartY = 50;
-  const boxHeight = 75; // Increased from 60 to accommodate new field
-  const boxPadding = 8;
-
-  // Draw box border
-  doc.setDrawColor(68, 114, 196);
-  doc.setLineWidth(1.5);
-  doc.rect(margin, boxStartY, contentWidth, boxHeight);
-
-  // Box header background
-  doc.setFillColor(68, 114, 196);
-  doc.rect(margin, boxStartY, contentWidth, 6, "F");
-
-  // Box header text
-  doc.setFont("Arial", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(255, 255, 255);
-  doc.text("PROPOSAL INFORMATION", margin + boxPadding, boxStartY + 4.5);
-
-  // Reset text color for content
-  doc.setTextColor(51, 51, 51);
-
-  // Column 1 (left side)
-  let currentY = boxStartY + boxPadding + 6;
-  doc.setFont("Arial", "bold");
-  doc.setFontSize(8);
-
-  // Proposal ID
-  doc.text("Proposal ID:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.text(proposalId, margin + boxPadding + 30, currentY);
-  currentY += 6;
-
-  // Project Name
-  doc.setFont("Arial", "bold");
-  doc.text("Project Name:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.text(proposalInfo.projectName, margin + boxPadding + 30, currentY);
-  currentY += 6;
-
-  // Customer Name
-  doc.setFont("Arial", "bold");
-  doc.text("Customer Name:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.text(proposalInfo.customerName, margin + boxPadding + 30, currentY);
-  currentY += 6;
-
-  // Company Name
-  doc.setFont("Arial", "bold");
-  doc.text("Company Name:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.text(proposalInfo.companyName, margin + boxPadding + 30, currentY);
-  currentY += 6;
-
-  // Customer Email
-  doc.setFont("Arial", "bold");
-  doc.text("Email:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.setTextColor(0, 102, 204);
-  doc.text(proposalInfo.customerEmail, margin + boxPadding + 30, currentY);
-  doc.setTextColor(51, 51, 51);
-  currentY += 6;
-
-  // Generated On
-  doc.setFont("Arial", "bold");
-  doc.text("Generated On:", margin + boxPadding, currentY);
-  doc.setFont("Arial", "normal");
-  doc.text(generatedOn, margin + boxPadding + 30, currentY);
-}
-</file>
-
 <file path="src/components/configurator/ViewingDistanceVisualizer.tsx">
 import React from "react";
 
@@ -10851,297 +11019,131 @@ const ViewingDistanceVisualizer: React.FC<ViewingDistanceVisualizerProps> = ({
 export default ViewingDistanceVisualizer;
 </file>
 
-<file path="src/lib/pdf/drawProductSpecsPage.ts">
+<file path="src/lib/pdf/drawProposalSummaryPage.ts">
 import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
-import { ProductSpecificationService } from "../../services/ProductSpecificationService";
 
-export const drawProductSpecsPage = async (
+// Helper: Capitalizes the first letter of each word (Title Case)
+const formatTitleCase = (text: string) => {
+  if (!text) return "";
+  return text
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+// SIGNATURE UNCHANGED: (doc, product, proposalData, proposalId)
+export const drawProposalSummaryPage = (
   doc: jsPDF,
-  product: Product
-): Promise<void> => {
-  const specs = await ProductSpecificationService.getByModel(product.model);
-console.log("PRODUCT OBJECT:", product);
-  console.log("PRODUCT SPECS JSON:", JSON.stringify(specs, null, 2));
-
-  if (!specs || Object.keys(specs).length === 0) {
-    return;
-  }
-
+  product: Product,
+  proposalData: {
+    projectName: string;
+    customerName: string;
+    companyName: string;
+    email: string;
+  },
+  proposalId: string
+) => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // ==========================================
   // 1. GLOBAL PAGE BACKGROUND
-  // ==========================================
-  doc.setFillColor(244, 247, 250); // Pastel slate-blue theme
+  doc.setFillColor(244, 247, 250);
   doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-  // ==========================================
-  // 2. PAGE TITLES & MODEL SUBTITLE
-  // ==========================================
+  // 2. PAGE TITLES
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(0, 85, 165); // Panasonic Blue
+  doc.setTextColor(0, 85, 165);
   doc.text("DISPLAY SOLUTIONS", 15, 35);
 
   doc.setFontSize(22);
   doc.setTextColor(30, 30, 30);
-  doc.text("PRODUCT SPECIFICATIONS", 15, 45);
+  doc.text("ENGINEERING PROPOSAL", 15, 45);
 
-  doc.setFontSize(14);
+  // 3. CARD 1: PROPOSAL INFORMATION
+  const card1Y = 55;
+  const card1Height = 85;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(220, 225, 230);
+  doc.roundedRect(15, card1Y, 180, card1Height, 2, 2, "FD");
+
+  doc.setFontSize(11);
   doc.setTextColor(0, 85, 165);
-  doc.text(product.model, 15, 55);
-
-  doc.setDrawColor(210);
-  doc.line(15, 60, pageWidth - 15, 60);
-
-  // ==========================================
-  // 3. CARD UI HELPER
-  // ==========================================
-  // ==========================================
-  // 3. CARD UI HELPER
-  // ==========================================
-  const LEFT_X = 15;
-  const RIGHT_X = 107.5;
-  const COL_WIDTH = 87.5;
+  doc.text("PROPOSAL INFORMATION", 25, card1Y + 12);
   
-  // 1. SPACING FIX: Start the cards slightly higher up the page (closer to the line)
-  let leftY = 64; 
-  let rightY = 64;
+  doc.setDrawColor(235, 235, 235);
+  doc.line(25, card1Y + 18, 185, card1Y + 18);
 
-  const drawSection = (
-    title: string,
-    rows: [string, string | undefined | null][],
-    column: "left" | "right"
-  ) => {
-    const startX = column === "left" ? LEFT_X : RIGHT_X;
-    let startY = column === "left" ? leftY : rightY;
-    
-    // Slightly wider text area to prevent aggressive wrapping
-    const maxValueWidth = 36; 
+  // FIX: wrap long values (especially email) so they don't overflow the card
+  const infoData = [
+    { label: "Proposal ID:", value: proposalId },
+    { label: "Project Name:", value: formatTitleCase(proposalData.projectName) },
+    { label: "Customer Name:", value: formatTitleCase(proposalData.customerName) },
+    { label: "Company Name:", value: formatTitleCase(proposalData.companyName) },
+    { label: "Email:", value: proposalData.email?.toLowerCase() },
+    { label: "Generated On:", value: new Date().toLocaleDateString() }
+  ];
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8.5); 
+  // Max width available for values (from x=65 to card right edge at 195, minus 10 margin)
+  const maxValueWidth = 120;
 
-    let totalRowsHeight = 0;
-    const processedRows = rows.map(([label, value]) => {
-      const valStr = String(value ?? "-");
-      const splitVal = doc.splitTextToSize(valStr, maxValueWidth);
-      
-      // 2. SPACING FIX: Tighter row heights. 
-      // Single line = 6mm (was 7.5mm), Double line = 10mm (was 11.5mm)
-      const rowHeight = (splitVal.length * 4) + 2; 
-      totalRowsHeight += rowHeight;
-      
-      return { label, splitVal, rowHeight };
-    });
-
-    // 3. SPACING FIX: Reduced top/bottom padding inside the white cards
-    const cardHeight = 16 + totalRowsHeight;
-
-    // Draw White Card Background
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(220, 225, 230);
-    doc.roundedRect(startX, startY, COL_WIDTH, cardHeight, 2, 2, "FD");
-
-    // Card Header
-    doc.setFont("helvetica", "bold");
+  let currentY = card1Y + 30;
+  infoData.forEach((item) => {
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.setTextColor(0, 85, 165);
-    doc.text(title.toUpperCase(), startX + 7, startY + 8); // Shifted text up
+    doc.setTextColor(120, 120, 120);
+    doc.text(item.label, 25, currentY);
 
-    // Header Divider
-    doc.setDrawColor(240, 240, 240);
-    doc.line(startX + 7, startY + 11, startX + COL_WIDTH - 7, startY + 11); // Shifted line up
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(50, 50, 50);
+    // Split long values to prevent overflow
+    const wrappedValue = doc.splitTextToSize(item.value || "N/A", maxValueWidth);
+    doc.text(wrappedValue, 65, currentY);
 
-    // Draw Rows
-    let currentY = startY + 17; // Shifted list start up
-    processedRows.forEach(({ label, splitVal, rowHeight }) => {
-      // Label
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(110, 110, 110);
-      doc.text(label, startX + 7, currentY);
+    // Advance Y: each extra wrapped line adds ~5 units
+    currentY += wrappedValue.length > 1 ? wrappedValue.length * 5 : 10;
+  });
 
-      // Value
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(40, 40, 40);
-      doc.text(splitVal, startX + 47, currentY); 
-      
-      currentY += rowHeight;
-    });
+  // 4. CARD 2: SELECTED DISPLAY
+  const card2Y = card1Y + card1Height + 10;
+  const card2Height = 55;
 
-    // 4. SPACING FIX: Reduced gap between stacked cards from 8 to 6
-    if (column === "left") {
-      leftY += cardHeight + 6;
-    } else {
-      rightY += cardHeight + 6;
-    }
-  };
-  // ==========================================
-  // 4. DATA EXTRACTION LOGIC
-  // ==========================================
-  const getSpec = (...keys: string[]) => {
-    for (const key of keys) {
-      if (specs[key]) return specs[key];
-    }
-    return "-";
-  };
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(220, 225, 230);
+  doc.roundedRect(15, card2Y, 180, card2Height, 2, 2, "FD");
 
-  const cabinetArea = (
-    (product.cabinetWidth / 1000) *
-    (product.cabinetHeight / 1000)
-  ).toFixed(2);
+  doc.setFontSize(11);
+  doc.setTextColor(0, 85, 165);
+  doc.text("SELECTED DISPLAY", 25, card2Y + 12);
 
-  const cabinetWeightText = getSpec("Cabinet Weight");
-  const cabinetWeight = parseFloat(cabinetWeightText);
+  doc.setDrawColor(235, 235, 235);
+  doc.line(25, card2Y + 18, 185, card2Y + 18);
 
-  const weightPerM2 = !isNaN(cabinetWeight)
-    ? (cabinetWeight / Number(cabinetArea)).toFixed(1) + " kg"
-    : "-";
+  const displayData = [
+    { label: "Model", value: `${product.applicationType} ${product.model}` },
+    { label: "Pixel Pitch", value: `${product.pitch} mm` },
+    { label: "Brightness", value: `${product.brightness} nits` }
+  ];
 
-  const application =
-    product.applicationType === "Indoor"
-      ? "Indoor Environment"
-      : "Outdoor Environment";
+  const colWidth = 55;
+  displayData.forEach((item, index) => {
+    const xPos = 25 + (index * colWidth);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    doc.text(item.label, xPos, card2Y + 30);
 
-  // ==========================================
-  // 5. RENDER CARDS
-  // ==========================================
-  
-  // --- LEFT COLUMN ---
-  drawSection(
-    "PHYSICAL PARAMETERS",
-    [
-      ["Pixel Configuration", getSpec("Pixel Configuration", "LED Type")],
-      ["Pixel Pitch", `${product.pitch} mm`],
-      ["Module Resolution", getSpec("Module Resolution")],
-      ["Module Dimensions", getSpec("Module Dimensions")],
-      ["Module Weight", getSpec("Module Weight")],
-      ["Modules Per Cabinet", product.modulesPerCabinet.toString()],
-      [
-  "Cabinet Resolution",
-  `${product.cabinetResolutionW} × ${product.cabinetResolutionH}`
-],
-      [
-  "Cabinet Dimensions",
-  `${product.cabinetWidth} × ${product.cabinetHeight} mm`
-],
-      ["Cabinet Surface Area", `${cabinetArea} m²`],
-      ["Cabinet Weight", specs["Cabinet Weight"]],
-      ["Weight Per m²", weightPerM2],
-      ["Flatness", "0.1 mm"],
-      ["Cabinet Material", getSpec("Cabinet Material")],
-      ["Service Access", getSpec("Service Access")],
-      ["Curve Radius", getSpec("Curve Radius", "611R Curvature (Concave/Convex)")],
-    ],
-    "left"
-  );
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(50, 50, 50);
 
-  drawSection(
-    "OPTICAL SPECIFICATIONS",
-    [
-      ["Brightness", `${product.brightness} nits`],
-      ["Pixel Density", getSpec("Pixel Density")],
-      [
-        "Color Temperature",
-        getSpec(
-          "Color Temperature",
-          "Color Temperature (K)"
-        )
-      ],
-      [
-        "Viewing Angle",
-        getSpec(
-          "Viewing Angle",
-          "Visual Viewing Angle (H x V)"
-        )
-      ],
-      ["Brightness Uniformity", specs["Brightness Uniformity"] ?? (product.applicationType === "Outdoor" ? "98%" : "-")],
-      ["Color Uniformity", specs["Color Uniformity"] ?? "±0.003"],
-      ["Contrast Ratio", specs["Contrast Ratio"]],
-      [
-        "Processing Depth",
-        getSpec(
-          "Processing Depth",
-          "Processing Depth (bit)"
-        )
-      ],
-    ],
-    "left"
-  );
-
-  // --- RIGHT COLUMN ---
-  drawSection(
-    "ELECTRICAL SPECIFICATIONS",
-    [
-      ["Power Consumption Max", getSpec("Power Consumption Max", "Power Consumption (Max)")],
-      ["Power Consumption Average", getSpec("Power Consumption Average", "Power Consumption (Average)")],
-      [
-        "Power Supply",
-        getSpec(
-          "Power Supply",
-          "Power Supply (V)"
-        )
-      ],
-      [
-        "Frame Rate",
-        getSpec(
-          "Frame Rate",
-          "Frame Rate (Hz)"
-        )
-      ],
-      [
-        "Refresh Rate",
-        getSpec(
-          "Refresh Rate",
-          "Refresh Rate (Hz)"
-        )
-      ],
-    ],
-    "right"
-  );
-
-  drawSection(
-  "OPERATION",
-  [
-    [
-      "LED Lifetime",
-      getSpec(
-        "LED Lifetime",
-        "LED Lifetime (Half Brightness)"
-      )
-    ],
-    ["Application", application],
-  ],
-  "right"
-);
-console.log(
-  "LED:",
-  JSON.stringify(
-    getSpec(
-      "LED Lifetime",
-      "LED Lifetime (Half Brightness)"
-    )
-  )
-);
-
-  drawSection(
-    "ENVIRONMENT",
-    [
-      [
-        "Operating Temp.",
-        getSpec(
-          "Operating Temperature",
-          "Operating Temperature (°C)"
-        )
-      ],
-      ["Operating Humidity", specs["Operating Humidity"]],
-      ["IP Rating", specs["IP Rating"]],
-    ],
-    "right"
-  );
+    // Constrain long values within column width
+    const wrappedValue = doc.splitTextToSize(item.value, colWidth - 3);
+    doc.text(wrappedValue, xPos, card2Y + 40);
+  });
 };
 </file>
 
@@ -11398,6 +11400,99 @@ export const drawScreenSpecsPage = (
 };
 </file>
 
+<file path="src/services/ProposalService.ts">
+import { ProposalRepository } from "../repositories/ProposalRepository";
+import { Product } from "../types/Product";
+import { ConfigurationResult } from "../types/ConfigurationResult";
+
+/**
+ * Service layer responsible for handling proposal and lead generation data.
+ * Acts as the bridge between the complex frontend state (user inputs, product specs, 
+ * calculated results) and the flat database schema used in Supabase.
+ */
+export const ProposalService = {
+  /**
+   * Compiles data from various frontend sources into a single, flat database record.
+   * This is triggered when a user successfully exports a PDF, acting as the lead capture mechanism.
+   *
+   * @param {any} proposalData - The customer information collected from the export modal form.
+   * @param {Product} product - The specific LED product model the user configured.
+   * @param {ConfigurationResult} result - The mathematical and physical output from the configuration engine.
+   * @param {number} width - The original target width requested by the user.
+   * @param {number} height - The original target height requested by the user.
+   * @returns {Promise<any>} A promise that resolves when the lead is successfully saved to the database.
+   */
+  async createProposal(
+    proposalData: any,
+    product: Product,
+    result: ConfigurationResult,
+    width: number,
+    height: number
+  ) {
+    // We flatten the nested frontend state (proposal info + product specs + calculated results) 
+    // into a single object with snake_case keys to strictly match the Supabase table schema.
+    return ProposalRepository.create({
+      proposal_id: proposalData.proposalId,
+      project_name: proposalData.projectName,
+      customer_name: proposalData.customerName,
+      company_name: proposalData.companyName,
+      email: proposalData.customerEmail,
+      phone_number: proposalData.phoneNumber || null,
+      location: proposalData.location || null,
+      product_model: product.model,
+      series_code: product.seriesCode,
+      application_type: product.applicationType,
+      screen_width: width,
+      screen_height: height,
+      actual_width: result.actualWidth,
+      actual_height: result.actualHeight,
+      resolution_w: result.resolutionW,
+      resolution_h: result.resolutionH,
+      total_cabinets: result.totalCabinets,
+      total_modules: result.totalModules,
+    });
+  },
+
+  /**
+   * Retrieves the complete list of generated proposals/leads.
+   * Used primarily by the Admin Dashboard to populate the leads table.
+   *
+   * @returns {Promise<any>} A promise resolving to an array of all recorded proposals.
+   */
+  async getProposals() {
+    return ProposalRepository.getAll();
+  },
+
+  /**
+   * Delete a single proposal permanently from the database
+   * IMPORTANT: This is a permanent operation - deleted proposals cannot be recovered
+   *
+  * @param {string} id - The database ID to delete
+   * @returns {Promise<void>}
+   */
+  async deleteProposal(id: string) {
+    if (!id) {
+      throw new Error("Proposal ID is required for deletion");
+    }
+    return ProposalRepository.deleteById(id);
+  },
+
+  /**
+   * Delete multiple proposals permanently from the database
+   * IMPORTANT: This is a permanent operation - deleted proposals cannot be recovered
+   *
+  * @param {string[]} ids - Array of database IDs to delete
+   * @returns {Promise<void>}
+   */
+  async deleteProposals(ids: string[]) {
+    if (!ids || ids.length === 0) {
+      throw new Error("At least one proposal ID is required for deletion");
+    }
+    return ProposalRepository.deleteMultiple(ids);
+  },
+};
+</file>
+
 <file path="src/types/Product.ts">
 // src/types/Product.ts
 
@@ -11426,6 +11521,219 @@ export interface Product {
   aio_display_diagonal?: number;
   screenWeightPerM2?: number;  // kg/m² - screen weight per square meter from product datasheet
 }
+</file>
+
+<file path="src/lib/pdf/drawProductSpecsPage.ts">
+import jsPDF from "jspdf";
+import { Product } from "../../types/Product";
+import { ProductSpecificationService } from "../../services/ProductSpecificationService";
+
+export const drawProductSpecsPage = async (
+  doc: jsPDF,
+  product: Product
+): Promise<void> => {
+  const specs = await ProductSpecificationService.getByModel(product.model);
+  console.log("PRODUCT OBJECT:", product);
+  console.log("PRODUCT SPECS JSON:", JSON.stringify(specs, null, 2));
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  // 1. GLOBAL PAGE BACKGROUND
+  doc.setFillColor(244, 247, 250);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+  // 2. PAGE TITLES & MODEL SUBTITLE
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 85, 165);
+  doc.text("DISPLAY SOLUTIONS", 15, 35);
+
+  doc.setFontSize(22);
+  doc.setTextColor(30, 30, 30);
+  doc.text("PRODUCT SPECIFICATIONS", 15, 45);
+
+  doc.setFontSize(14);
+  doc.setTextColor(0, 85, 165);
+  doc.text(product.model, 15, 55);
+
+  doc.setDrawColor(210);
+  doc.line(15, 60, pageWidth - 15, 60);
+
+  // EARLY EXIT: specs missing — show message instead of blank page
+  if (!specs || Object.keys(specs).length === 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(110, 110, 110);
+    doc.text("Specifications data is not available for this model.", 15, 80);
+    doc.text("Please contact Panasonic for detailed technical specifications.", 15, 90);
+    return;
+  }
+
+  // 3. CARD UI HELPER
+  const LEFT_X = 15;
+  const RIGHT_X = 107.5;
+  const COL_WIDTH = 87.5;
+  
+  let leftY = 64; 
+  let rightY = 64;
+
+  const drawSection = (
+    title: string,
+    rows: [string, string | undefined | null][],
+    column: "left" | "right"
+  ) => {
+    const startX = column === "left" ? LEFT_X : RIGHT_X;
+    let startY = column === "left" ? leftY : rightY;
+    
+    const maxValueWidth = 36; 
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5); 
+
+    let totalRowsHeight = 0;
+    const processedRows = rows.map(([label, value]) => {
+      const valStr = String(value ?? "-");
+      const splitVal = doc.splitTextToSize(valStr, maxValueWidth);
+      const rowHeight = (splitVal.length * 4) + 2; 
+      totalRowsHeight += rowHeight;
+      return { label, splitVal, rowHeight };
+    });
+
+    const cardHeight = 16 + totalRowsHeight;
+
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(220, 225, 230);
+    doc.roundedRect(startX, startY, COL_WIDTH, cardHeight, 2, 2, "FD");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 85, 165);
+    doc.text(title.toUpperCase(), startX + 7, startY + 8);
+
+    doc.setDrawColor(240, 240, 240);
+    doc.line(startX + 7, startY + 11, startX + COL_WIDTH - 7, startY + 11);
+
+    let currentY = startY + 17;
+    processedRows.forEach(({ label, splitVal, rowHeight }) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(110, 110, 110);
+      doc.text(label, startX + 7, currentY);
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40, 40, 40);
+      doc.text(splitVal, startX + 47, currentY); 
+      
+      currentY += rowHeight;
+    });
+
+    if (column === "left") {
+      leftY += cardHeight + 6;
+    } else {
+      rightY += cardHeight + 6;
+    }
+  };
+
+  // 4. DATA EXTRACTION
+  const getSpec = (...keys: string[]) => {
+    for (const key of keys) {
+      if (specs[key]) return specs[key];
+    }
+    return "-";
+  };
+
+  const cabinetArea = (
+    (product.cabinetWidth / 1000) *
+    (product.cabinetHeight / 1000)
+  ).toFixed(2);
+
+  const cabinetWeightText = getSpec("Cabinet Weight");
+  const cabinetWeight = parseFloat(cabinetWeightText);
+
+  const weightPerM2 = !isNaN(cabinetWeight)
+    ? (cabinetWeight / Number(cabinetArea)).toFixed(1) + " kg"
+    : "-";
+
+  const application =
+    product.applicationType === "Indoor"
+      ? "Indoor Environment"
+      : "Outdoor Environment";
+
+  // 5. RENDER CARDS
+
+  // --- LEFT COLUMN ---
+  drawSection(
+    "PHYSICAL PARAMETERS",
+    [
+      ["Pixel Configuration", getSpec("Pixel Configuration", "LED Type")],
+      ["Pixel Pitch", `${product.pitch} mm`],
+      ["Module Resolution", getSpec("Module Resolution")],
+      ["Module Dimensions", getSpec("Module Dimensions")],
+      ["Module Weight", getSpec("Module Weight")],
+      ["Modules Per Cabinet", product.modulesPerCabinet.toString()],
+      ["Cabinet Resolution", `${product.cabinetResolutionW} × ${product.cabinetResolutionH}`],
+      ["Cabinet Dimensions", `${product.cabinetWidth} × ${product.cabinetHeight} mm`],
+      ["Cabinet Surface Area", `${cabinetArea} m²`],
+      ["Cabinet Weight", specs["Cabinet Weight"]],
+      ["Weight Per m²", weightPerM2],
+      ["Flatness", "0.1 mm"],
+      ["Cabinet Material", getSpec("Cabinet Material")],
+      ["Service Access", getSpec("Service Access")],
+      ["Curve Radius", getSpec("Curve Radius", "611R Curvature (Concave/Convex)")],
+    ],
+    "left"
+  );
+
+  drawSection(
+    "OPTICAL SPECIFICATIONS",
+    [
+      ["Brightness", `${product.brightness} nits`],
+      ["Pixel Density", getSpec("Pixel Density")],
+      ["Color Temperature", getSpec("Color Temperature", "Color Temperature (K)")],
+      ["Viewing Angle", getSpec("Viewing Angle", "Visual Viewing Angle (H x V)")],
+      ["Brightness Uniformity", specs["Brightness Uniformity"] ?? (product.applicationType === "Outdoor" ? "98%" : "-")],
+      ["Color Uniformity", specs["Color Uniformity"] ?? "±0.003"],
+      ["Contrast Ratio", specs["Contrast Ratio"]],
+      ["Processing Depth", getSpec("Processing Depth", "Processing Depth (bit)")],
+    ],
+    "left"
+  );
+
+  // --- RIGHT COLUMN ---
+  drawSection(
+    "ELECTRICAL SPECIFICATIONS",
+    [
+      ["Power Consumption Max", getSpec("Power Consumption Max", "Power Consumption (Max)")],
+      ["Power Consumption Average", getSpec("Power Consumption Average", "Power Consumption (Average)")],
+      ["Power Supply", getSpec("Power Supply", "Power Supply (V)")],
+      ["Frame Rate", getSpec("Frame Rate", "Frame Rate (Hz)")],
+      ["Refresh Rate", getSpec("Refresh Rate", "Refresh Rate (Hz)")],
+    ],
+    "right"
+  );
+
+  drawSection(
+    "OPERATION",
+    [
+      ["LED Lifetime", getSpec("LED Lifetime", "LED Lifetime (Half Brightness)")],
+      ["Application", application],
+    ],
+    "right"
+  );
+
+  console.log("LED:", JSON.stringify(getSpec("LED Lifetime", "LED Lifetime (Half Brightness)")));
+
+  drawSection(
+    "ENVIRONMENT",
+    [
+      ["Operating Temp.", getSpec("Operating Temperature", "Operating Temperature (°C)")],
+      ["Operating Humidity", specs["Operating Humidity"]],
+      ["IP Rating", specs["IP Rating"]],
+    ],
+    "right"
+  );
+};
 </file>
 
 <file path="src/components/configurator/ConfigForm.tsx">
@@ -13724,6 +14032,11 @@ import { BrochurePageService } from "../services/BrochurePageService";
 import { ProposalService } from "../services/ProposalService";
 import { generateProposalId } from "../lib/generateProposalId";
 
+import { 
+  canvasToOptimizedJPEG, 
+  QUALITY_PRESETS 
+} from "../lib/helpers/imageOptimization";
+
 const panasonicLogo = new URL("../assets/Panasonic-logo.jpg", import.meta.url).href;
 
 /**
@@ -13745,6 +14058,7 @@ function ConfiguratorPage() {
         customerName: "",
         companyName: "",
         customerEmail: "",
+        salesContactEmail: "",
     });
 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -13828,22 +14142,36 @@ function ConfiguratorPage() {
     };
 
     const handleExportPdf = async (proposalData?: any) => {
-        if (!selectedProduct || !result) return;
+        if (!selectedProduct) {
+            throw new Error("Please select a product before exporting PDF");
+        }
+
+        if (!result) {
+            throw new Error("Please calculate the configuration before exporting PDF");
+        }
+
         try {
             let imageData: string | undefined;
             let viewingDistanceImage: string | undefined;
 
             if (screenPreviewRef.current) {
-                const canvas = await html2canvas(screenPreviewRef.current, { scale: 2 });
-                imageData = canvas.toDataURL("image/png");
+                // ⚠️ OPTIMIZATION: Changed scale 2→1.5 (43.75% fewer pixels) + PNG→JPEG
+                const canvas = await html2canvas(screenPreviewRef.current, {
+                    scale: 1.5,  // Reduced from 2
+                    backgroundColor: "#ffffff"
+                });
+                // JPEG at 0.85 quality is ~60-70% smaller than PNG
+                imageData = canvasToOptimizedJPEG(canvas, QUALITY_PRESETS.SCREEN_CAPTURE);
             }
 
             // Capture Viewing Distance only for standard products (not AIO)
             if (viewingDistanceRef.current && !isAIO) {
+                // ⚠️ OPTIMIZATION: Changed scale 2→1.5 + PNG→JPEG
                 const canvas = await html2canvas(viewingDistanceRef.current, {
-                    scale: 2,
+                    scale: 1.5,  // Reduced from 2
+                    backgroundColor: "#ffffff"
                 });
-                viewingDistanceImage = canvas.toDataURL("image/png");
+                viewingDistanceImage = canvasToOptimizedJPEG(canvas, QUALITY_PRESETS.VIEWING_DISTANCE);
             }
 
             const proposalId = generateProposalId();
@@ -14008,7 +14336,6 @@ import jsPDF from "jspdf";
 import { Product } from "../../types/Product";
 import { getBrochureForSeries } from "../../services/brochureService";
 import { ConfigurationResult } from "../../types/ConfigurationResult";
-import { ProposalInfo } from "../../types/ProposalInfo";
 import { applyGlobalPageTemplate } from "./addPdfFooter"; 
 import { drawMarketingCoverPage } from "./drawMarketingCoverPage";
 import { addBrochurePages } from "./addBrochurePages";
@@ -14026,11 +14353,6 @@ import { drawProposalSummaryPage } from "./drawProposalSummaryPage";
 
 import { panasonicLogoBase64 } from "../../assets/logoBase64";
 
-/**
- * AIO DETECTION: Uses product.seriesType === "aio" (now populated from series.type column)
- * AIO products get simplified PDF: EDM + Brochure only
- * Standard products get full: EDM + Proposal + Engineering pages + Brochure
- */
 export const generatePdf = async (
   product: Product,
   result: ConfigurationResult,
@@ -14038,57 +14360,76 @@ export const generatePdf = async (
   height: number,
   screenPreviewImage?: string,
   viewingDistanceImage?: string,
-  proposalData?: ProposalInfo,
+  proposalData?: {
+    projectName: string;
+    customerName: string;
+    companyName: string;
+    email: string;
+  },
   proposalId?: string,
   unit: "mtr" | "ft" = "mtr" 
 ): Promise<void> => {
-  const doc = new jsPDF();
+  // COMPRESSION FIX: Enable jsPDF compression to reduce file size
+  const doc = new jsPDF({
+    compress: true,
+    precision: 2,
+  });
 
+  console.log("=== PDF Generation Started ===");
   console.log("Proposal Data:", proposalData);
   console.log("Proposal ID:", proposalId);
   console.log("Selected Product:", product);
   console.log("Series Code:", product.seriesCode);
   console.log("Series Type:", product.seriesType);
 
-  const brochure = await getBrochureForSeries(product.seriesCode);
+  // ========== BROCHURE FETCH WITH ERROR HANDLING ==========
+  let brochure;
+  try {
+    brochure = await getBrochureForSeries(product.seriesCode);
+    console.log(
+      `[generatePdf] Brochure for ${product.seriesCode}: cover=${!!brochure.coverImage}, pages=${brochure.brochurePages.length}`
+    );
+  } catch (brochureError) {
+    console.error(`[generatePdf] Failed to fetch brochure for ${product.seriesCode}:`, brochureError);
+    throw new Error(
+      `Cannot fetch brochure for series ${product.seriesCode}. ` +
+      `Error: ${brochureError instanceof Error ? brochureError.message : String(brochureError)}`
+    );
+  }
+
+  if (!brochure || !brochure.coverImage) {
+    throw new Error(
+      `[generatePdf] Invalid brochure for series ${product.seriesCode}. Missing coverImage.`
+    );
+  }
 
   // ========== AIO DETECTION ==========
   const isAIO = product.seriesType === "aio";
 
   // ========== AIO BRANCH ==========
   if (isAIO) {
-    // AIO: Simplified PDF structure (EDM + Brochure only)
-    // Page 1: EDM Cover
-    drawMarketingCoverPage(doc, brochure.coverImage);
+    console.log("[generatePdf] AIO Series - using simplified PDF structure");
 
-    // Pages 2+: Brochure pages (contains all marketing + specs)
+    drawMarketingCoverPage(doc, brochure.coverImage);
     addBrochurePages(doc, brochure);
 
-    // Optionally apply footer to EDM only (minimal branding)
     if (proposalId) {
       const totalPages = doc.getNumberOfPages();
-      console.log("AIO PDF TOTAL PAGES:", totalPages);
-      
-      // Only stamp page 1 (EDM) with footer
       doc.setPage(1);
-      applyGlobalPageTemplate(
-        doc,
-        proposalId,
-        1,
-        totalPages,
-        panasonicLogoBase64
-      );
+      applyGlobalPageTemplate(doc, proposalId, 1, totalPages, panasonicLogoBase64);
     }
 
-    // Save with AIO-specific filename
     const targetProject = proposalData?.projectName || "AIO-Display";
     const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
     const finalFilename = `PitchLine_${product.seriesCode}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
     doc.save(finalFilename);
-    return; // Exit early for AIO
+    console.log("[generatePdf] AIO PDF exported:", finalFilename);
+    return;
   }
 
-  // ========== STANDARD BRANCH (Non-AIO) ==========
+  // ========== STANDARD BRANCH ==========
+  console.log("[generatePdf] Standard series - using full PDF structure");
+
   // Page 1: EDM Cover Page
   drawMarketingCoverPage(doc, brochure.coverImage);
 
@@ -14097,9 +14438,9 @@ export const generatePdf = async (
   if (proposalData && proposalId) {
     drawProposalSummaryPage(
       doc,
-      proposalId,
+      product,
       proposalData,
-      new Date().toLocaleDateString()
+      proposalId
     );
   }
 
@@ -14117,10 +14458,7 @@ export const generatePdf = async (
 
   // Page 4: Viewing Distance Analysis
   doc.addPage();
-  await drawViewingDistancePage(
-    doc,
-    viewingDistanceImage
-  );
+  await drawViewingDistancePage(doc, viewingDistanceImage);
 
   // Page 5: Product Specifications
   doc.addPage();
@@ -14128,7 +14466,6 @@ export const generatePdf = async (
 
   // Page 6: Power Diagram Page
   doc.addPage();
-
   if (product.applicationType === "Indoor (Curve Display)") {
     drawCurvePowerInfoPage(doc);
   } else {
@@ -14137,23 +14474,17 @@ export const generatePdf = async (
         ? POWER_RULES.outdoor.maxCabinetsPerChain
         : POWER_RULES.indoor.maxCabinetsPerChain;
 
-    const powerFlow = calculatePowerFlow(
-      result.cabinetsH,
-      maxCabinetsPerChain
-    );
-
+    const powerFlow = calculatePowerFlow(result.cabinetsH, maxCabinetsPerChain);
     const assignmentGrid = assignPowerChains(
       result.cabinetsW,
       result.cabinetsH,
       powerFlow.distribution
     );
-
     drawPowerDiagramPage(doc, result, assignmentGrid);
   }
 
   // Page 7: Data Diagram Page
   doc.addPage();
-
   if (product.applicationType === "Indoor (Curve Display)") {
     drawCurveDataInfoPage(doc);
   } else {
@@ -14163,22 +14494,13 @@ export const generatePdf = async (
   // Append Brochure pages at the very end
   addBrochurePages(doc, brochure);
 
-  // Stamp Document Footers across engineering pages only (pages 2-7)
+  // Stamp footers on engineering pages 2-7 only (brochure pages won't get footers)
   if (proposalId) {
     const totalPages = doc.getNumberOfPages();
-    console.log("STANDARD PDF TOTAL PAGES:", totalPages);
-
-    // Pages 2-7: Engineering pages get footer
-    // Pages 8+: Brochure pages (no footer)
+    console.log("PDF TOTAL PAGES:", totalPages);
     for (let i = 2; i <= 7; i++) {
       doc.setPage(i);
-      applyGlobalPageTemplate(
-        doc,
-        proposalId,
-        i,
-        totalPages,
-        panasonicLogoBase64
-      );
+      applyGlobalPageTemplate(doc, proposalId, i, totalPages, panasonicLogoBase64);
     }
   }
 
@@ -14187,8 +14509,9 @@ export const generatePdf = async (
   const safeProjectName = targetProject.replace(/[\\/:*?"<>|]/g, "_");
   const finalFilename = `PitchLine_${product.seriesCode || "LED"}_${safeProjectName}_${proposalId || "Proposal"}.pdf`;
 
-  // Save Document Binary
   doc.save(finalFilename);
+  console.log("[generatePdf] PDF exported successfully:", finalFilename);
+  console.log("=== PDF Generation Completed ===");
 };
 </file>
 
