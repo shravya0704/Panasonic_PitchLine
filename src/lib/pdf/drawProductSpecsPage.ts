@@ -129,10 +129,9 @@ export const drawProductSpecsPage = async (
     ? (cabinetWeight / Number(cabinetArea)).toFixed(1) + " kg"
     : "-";
 
-  const application =
-    product.applicationType === "Indoor"
-      ? "Indoor Environment"
-      : "Outdoor Environment";
+  const application = product.applicationType.startsWith("Indoor")
+    ? "Indoor Environment"
+    : "Outdoor Environment";
 
   // 5. RENDER CARDS
 
