@@ -34,6 +34,7 @@ export const ProposalService = {
       customer_name: proposalData.customerName,
       company_name: proposalData.companyName,
       email: proposalData.customerEmail,
+      sales_contact_email: proposalData.salesContactEmail,
       phone_number: proposalData.phoneNumber || null,
       location: proposalData.location || null,
       product_model: product.model,

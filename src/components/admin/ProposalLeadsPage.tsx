@@ -80,6 +80,7 @@ export default function ProposalLeadsPage() {
       "Customer",
       "Company",
       "Email",
+      "Sales Contact Email",
       "Model",
       "Date",
     ];
@@ -89,6 +90,7 @@ export default function ProposalLeadsPage() {
       `"${lead.customer_name || ""}"`,
       `"${lead.company_name || ""}"`,
       `"${lead.email || ""}"`,
+      `"${lead.sales_contact_email || "-"}"`,
       `"${lead.product_model || ""}"`,
       `"${new Date(lead.created_at).toLocaleDateString()}"`,
     ]);
@@ -457,6 +459,7 @@ export default function ProposalLeadsPage() {
             </th>
             
             <th style={thStyle}>Email</th>
+            <th style={thStyle}>Sales Contact Email</th>
             <th style={thStyle}>Model</th>
             
             <th
@@ -516,7 +519,11 @@ export default function ProposalLeadsPage() {
               <td style={tdStyle}>{lead.company_name}</td>
 
               <td style={{ ...tdStyle, color: "#005BAC", fontWeight: 500 }}>
-                {lead.email}
+                {lead.email || "-"}
+              </td>
+
+              <td style={{ ...tdStyle, color: "#005BAC", fontWeight: 500 }}>
+                {lead.sales_contact_email || "-"}
               </td>
 
               <td style={tdStyle}>
